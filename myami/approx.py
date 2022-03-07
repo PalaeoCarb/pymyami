@@ -7,7 +7,7 @@ from scipy.linalg import lstsq
 from datetime import datetime
 
 from .helpers import shape_matcher, load_params, MyAMI_parameter_file
-from .calc import calc_Fcorr
+from .direct import calc_Fcorr
 
 FCORR_COEFS = load_params('Fcorr_approx.json')
 
