@@ -2,8 +2,6 @@
 User-facing function for calculating K correction factors using MyAMI
 """
 
-import numpy as np
-import pandas as pd
 from .helpers import shape_matcher
 from .pitzer import calculate_gKs
 from .params import PitzerParams
