@@ -6,7 +6,7 @@ import numpy as np
 import pkg_resources as pkgrs
 
 def MyAMI_resource_file(fname=''):
-    return pkgrs.resource_filename('myami', f'MyAMI/parameters/{fname}')
+    return pkgrs.resource_filename('myami', f'parameters/{fname}')
 
 def expand_dims(orig, target):
     """
