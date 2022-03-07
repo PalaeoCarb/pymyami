@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from glob import glob
-from .helpers import MyAMI_resource_file, expand_dims, match_dims, load_params
+from .helpers import MyAMI_parameter_file, expand_dims, match_dims, load_params
 
 # dictionaries of valid ions containing their matrix indices
 # positive ions H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
@@ -66,8 +66,9 @@ def EqA1(a, T, Tinv, lnT):
 
 # Load Tables A10 and A11
 TABLES = {}
-fs = glob(MyAMI_resource_file('TabA*.csv'))
+fs = glob(MyAMI_parameter_file('TabA*.csv'))
 for f in fs:
+    print(f)
     fname = os.path.split(f)[-1].replace('.csv', '')
     TABLES[fname] = pd.read_csv(f, comment='#')
 

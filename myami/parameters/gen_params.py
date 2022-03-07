@@ -1,8 +1,9 @@
 # Generate Pitzer, Theta and Phi parameter tables for use by MyAMI
 from argon2 import Parameters
 import numpy as np
-import pkg_resources as pkgrs
 import json
+
+from myami.helpers import MyAMI_parameter_file
 
 ##############################################################################
 # Pitzer Parameters
@@ -292,7 +293,7 @@ sources = {
 
 pitzer_params['sources'] = sources
 
-with open(pkgrs.resource_filename('myami', 'MyAMI/parameters/pitzer_params.json'), 'w') as f:
+with open(MyAMI_parameter_file('pitzer_params.json'), 'w') as f:
     json.dump(pitzer_params, f, indent=2)
 
 ##############################################################################
@@ -357,7 +358,7 @@ Theta_base = {
     'Theta_negative': Theta_negative_base.tolist()
 }
 
-with open(pkgrs.resource_filename('myami', 'MyAMI/parameters/theta_bases.json'), 'w') as f:
+with open(MyAMI_parameter_file('theta_bases.json'), 'w') as f:
     json.dump(Theta_base, f, indent=2)
 
 ##############################################################################
@@ -430,5 +431,5 @@ Phi_base = {
     'Phi_NNP': Phi_NNP_base.tolist()
 }
 
-with open(pkgrs.resource_filename('myami', 'MyAMI/parameters/phi_bases.json'), 'w') as f:
+with open(MyAMI_parameter_file('phi_bases.json'), 'w') as f:
     json.dump(Phi_base, f, indent=2)

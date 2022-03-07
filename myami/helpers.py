@@ -5,7 +5,7 @@ import json
 import numpy as np
 import pkg_resources as pkgrs
 
-def MyAMI_resource_file(fname=''):
+def MyAMI_parameter_file(fname=''):
     return pkgrs.resource_filename('myami', f'parameters/{fname}')
 
 def expand_dims(orig, target):
@@ -59,7 +59,7 @@ def load_params(param_file, asarrays=True):
     dict
         The contents of the json file as a dict.
     """
-    with open(pkgrs.resource_filename('myami', f'MyAMI/parameters/{param_file}'), 'r') as f:
+    with open(MyAMI_parameter_file(param_file), 'r') as f:
         params = json.load(f)
     
     if asarrays:

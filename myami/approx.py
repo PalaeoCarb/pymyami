@@ -6,7 +6,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from scipy.linalg import lstsq
 from datetime import datetime
 
-from .helpers import shape_matcher, load_params, MyAMI_resource_file
+from .helpers import shape_matcher, load_params, MyAMI_parameter_file
 from .calc import calc_Fcorr
 
 FCORR_COEFS = load_params('Fcorr_approx.json')
@@ -133,14 +133,14 @@ def generate_approximate_Fcorr_params(n=29, fit_reports=True):
         coefs[k], _, _, _ = lstsq(X_, y)
         
     if fit_reports:
-        print(f'Fit reports saved in {MyAMI_resource_file()}')
+        print(f'Fit reports saved in {MyAMI_parameter_file()}')
         pred = {k: X_.dot(c) for k, c in coefs.items()}
         for k in coefs:
-            fname = MyAMI_resource_file(f'Fcorr_approx_{k}.png')
+            fname = MyAMI_parameter_file(f'Fcorr_approx_{k}.png')
             fig, axs = Fcorr_fit_report(k, flat_Fcorr[k], pred[k], X)
             fig.savefig(fname, dpi=150)
 
-    with open(MyAMI_resource_file('Fcorr_approx.json'), 'w') as f:
+    with open(MyAMI_parameter_file('Fcorr_approx.json'), 'w') as f:
         json.dump({k: list(v) for k, v in coefs.items()}, f)
 
 
