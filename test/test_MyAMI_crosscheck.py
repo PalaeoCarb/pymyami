@@ -17,7 +17,7 @@ class MyAMI_V1_crosscheck(unittest.TestCase):
 
         Ks = 'K0', 'K1', 'K2', 'KW', 'KB', 'KspA', 'KspC', 'KS'
 
-        print('Comparing Ks to MyAMI_V1')
+        print('Comparing Ks to MyAMI_V1 (must be <0.4% different)')
         for k in Ks:
             v1 = check[k]
             new = new_Fcorr[k]
