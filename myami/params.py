@@ -42,6 +42,18 @@ def filter_terms(tab, valid_ions):
 def get_ion_index(ions):
     return tuple([Iind[k] for k in ions.split('-')])
 
+# Load Parameter Tables
+TABLES = {}
+fs = glob(MyAMI_parameter_file('TabA*.csv'))
+for f in fs:
+    print(f)
+    fname = os.path.split(f)[-1].replace('.csv', '')
+    TABLES[fname] = pd.read_csv(f, comment='#')
+
+TABA11 = filter_terms(TABLES['TabA11'], Iind)
+TABA10 = filter_terms(TABLES['TabA10'], Iind)
+TABA10.fillna(0, inplace=True)
+
 # Table-Specific equations
 def EqA10(a, TK):
     """
@@ -63,19 +75,6 @@ def EqA1(a, T, Tinv, lnT):
         a[:, 6] / (680 - T) +
         a[:, 7] / (T - 227)
     )
-
-# Load Tables A10 and A11
-TABLES = {}
-fs = glob(MyAMI_parameter_file('TabA*.csv'))
-for f in fs:
-    print(f)
-    fname = os.path.split(f)[-1].replace('.csv', '')
-    TABLES[fname] = pd.read_csv(f, comment='#')
-
-TABA11 = filter_terms(TABLES['TabA11'], Iind)
-TABA10 = filter_terms(TABLES['TabA10'], Iind)
-TABA10.fillna(0, inplace=True)
-
 
 def calc_Theta_Phi(TK):
     """
