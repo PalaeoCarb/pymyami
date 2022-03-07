@@ -46,7 +46,6 @@ def get_ion_index(ions):
 TABLES = {}
 fs = glob(MyAMI_parameter_file('TabA*.csv'))
 for f in fs:
-    print(f)
     fname = os.path.split(f)[-1].replace('.csv', '')
     TABLES[fname] = pd.read_csv(f, comment='#')
 
