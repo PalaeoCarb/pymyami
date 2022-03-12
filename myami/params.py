@@ -60,7 +60,7 @@ def build_salt(p, n):
 def break_salt(s):
     for p in Pind:
         if s.startswith(p):
-            s = re.sub(p + '2?', '', s)
+            s = re.sub(p + '2?\(?', '', s)
             for n in Nind:
                 if s.startswith(n):
                     return p, n
