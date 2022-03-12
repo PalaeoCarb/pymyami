@@ -1,5 +1,5 @@
 # Table A11 of Millero and Pierrot (1998) doi:10.1023/A:1009656023546
-Type,Parameter,Value,Reference
+Parameter,Pair,Value,Reference
 Theta,Sr-Na,0.07,(a)
 Theta,Sr-K,0.01,(1)
 Theta,Mg-Ca,0.007,(b)

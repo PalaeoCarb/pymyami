@@ -1,6 +1,6 @@
 # Table A10 of Millero and Pierrot (1998) doi:10.1023/A:1009656023546
 # P = a1 + a2 / T + a3 * T + a4 * (T - 298.15) + a5 * (T - 298.15)**2
-Type,Parameter,a1,a2,a3_e4,a4_e4,a5_e6,Range_C,Reference
+Parameter,Pair,a1,a2,a3_e4,a4_e4,a5_e6,Range_C,Reference
 Theta,H-Sr,0.0591,,,4.5,,0-50,(a)
 Theta,H-Na,0.03416,,,-2.09,,0-50,(b)
 Theta,H-K,0.005,,,-2.275,,,(b)

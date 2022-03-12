@@ -77,7 +77,7 @@ Iind.update(Nind)
 
 def filter_terms(tab, valid_ions):
     include = []
-    for ions in tab.Parameter.str.split('-'):
+    for ions in tab.Pair.str.split('-'):
         include.append(~np.any([i not in valid_ions for i in ions]))
 
     return tab.loc[include]
@@ -286,8 +286,8 @@ def calc_Theta_Phi(TK):
 
     # Assign static values from Table A11
     for _, row in TABA11.iterrows():
-        ions = row.Parameter.split('-')
-        index = get_ion_index(row.Parameter)
+        ions = row.Pair.split('-')
+        index = get_ion_index(row.Pair)
 
         if ions[0] in Pind:
             if len(ions) == 2:
@@ -308,8 +308,8 @@ def calc_Theta_Phi(TK):
     # Assign T-sensitive values from Table A10
     pnames = ['a1', 'a2', 'a3_e4', 'a4_e4', 'a5_e6']  # parameter names in TABle
     for _, row in TABA10.iterrows():
-        ions = row.Parameter.split('-')
-        index = get_ion_index(row.Parameter)
+        ions = row.Pair.split('-')
+        index = get_ion_index(row.Pair)
         
         a = row[pnames]  # identify parameters
         val = EqA10(a, TK)
