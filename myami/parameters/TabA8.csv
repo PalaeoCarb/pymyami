@@ -1,6 +1,6 @@
 # Table A8 of Millero and Pierrot (1998) doi:10.1023/A:1009656023546
 # Coefficients for Pitzer parameters valid at 25C
-Salt,beta_0,beta_1,beta_2,C,Reference
+Salt,beta_0,beta_1,beta_2,C_phi,Reference
 SrI,0.40125,1.86,,0.0027,(a)
 NaNO2,0.0641,0.1015,,-0.0049,(a)
 NaH2PO4,-0.0533,0.0396,,0.00795,(a)
