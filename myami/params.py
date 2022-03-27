@@ -57,16 +57,20 @@ def build_salt(p, n):
     else:
         return f'{p}{n}'
     
+recations = '|'.join(Pind.keys())
+reanions = '|'.join(Nind.keys())
+sm = re.compile('^(' + recations + ')[0-9]?\(?(' + reanions + ')\)?[0-9]?$')
+
 def break_salt(s):
     if '-' in s:
         return s.split('-')
-    for p in Pind:
-        if s.startswith(p):
-            s = re.sub(p + '2?\(?', '', s)
-            for n in Nind:
-                if s.startswith(n):
-                    return p, n
-    return None, None
+    
+    match = sm.match(s)
+    if match:
+        gs = match.groups()
+        return gs[0], gs[1]
+    else:
+        return None, None
 
 N_cations = len(Pind)  # H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
 N_anions = len(Nind)  # OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
@@ -201,6 +205,7 @@ def calc_beta_C(TK, pitzer_params):
     # Na = cation
     beta_0[1, 0], beta_1[1, 0], C_phi[1, 0] = Equation_NaOH  # Na-OH
     beta_0[1, 1], beta_1[1, 1], C_phi[1, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['NaCl'])  # Na-Cl
+    print('orig', beta_0[1, 1], beta_1[1, 1], C_phi[1, 1])
     beta_0[1, 2], beta_1[1, 2], C_phi[1, 2] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaBOH4'])  # Na-B(OH)4
     beta_0[1, 3], beta_1[1, 3], C_phi[1, 3] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHCO3'])  # Na-HCO3
     beta_0[1, 4], beta_1[1, 4], C_phi[1, 4] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHSO4'])  # Na-HSO4
