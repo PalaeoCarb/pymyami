@@ -7,14 +7,6 @@ from .params import TABLES, Pind, Nind, Iind, N_anions, N_cations, get_ion_index
 from .params import build_salt, break_salt
 from .params import PitzerParams
 
-# TK = np.array([15, 25, 35]) + 298.15
-TK = np.array([25]) + 298.15
-TKinv = 1. / TK
-lnTK = np.log(TK)
-TKpower2 = TK**2.
-TKpower3 = TK**3.
-TKpower4 = TK**4.
-Tsub = TK - 298.15
 
 def EqA1(a, TK, TKinv, lnTK, **kwargs):
     # T in Kelvin
@@ -45,7 +37,20 @@ def EqA7(a, TK, **kwargs):
         + PJ / 6 * (TK**2 - 88893.4225)
     )
 
+# link tables to equations
+TabEqs = {
+    'TabA1': EqA1,
+    'TabA2': EqA2,
+    'TabA3': EqA3A4,
+    'TabA4': EqA3A4,
+    'TabA5': EqA5A6,
+    'TabA6': EqA5A6,
+    'TabA7': EqA7,
+    'TabA9': None,  # both special
+    'TabSpecial': None  # special cases handled below
+}
 
+# Special Case Equations noted in table subscripts
 def EqA2_MgSO4(a, TK, **kwargs):
     return (
         a[0] * ((TK / 2) + (88804) / (2 * TK) - 298)
@@ -57,6 +62,12 @@ def EqA2_MgSO4(a, TK, **kwargs):
         + a[5]
     )
 
+def EqA3A4_XHS(a, Tsub, TKinv, **kwargs):
+    return a[0] + a[1] * TKinv + a[2] * Tsub**2
+
+def EqA3_XSO3(a, TK, TKinv):
+    return a[0] + a[1] * (TKinv - 1/298.15) + a[2] * np.log(TK / 298.15)
+
 def EqA9_HCl(a, TK, **kwargs):
     return a[0] + a[1] * TK + a[2] / TK
 
@@ -67,41 +78,7 @@ def EqA9_HSO4(a, TK, **kwargs):
         (a[1] + TKsub3 * ((a[2] / 2) + TKsub3 * (a[3] / 6)))
         )
 
-def EqSpecial_Na2SO4_Moller(a, TK, lnTK, **kwargs):
-    return (
-        a[0] +
-        a[1] * TK +
-        a[2] / TK +
-        a[3] * lnTK +
-        a[4] / (TK - 263) +
-        a[5] * TK**2 +
-        a[6] / (680. - TK)
-    )
-
-def EqSpecial_MgHSO4(a, Tsub, **kwargs):
-    return a[0] + a[1] * Tsub
-
-
-TabEqs = {
-    'TabA1': EqA1,
-    'TabA2': EqA2,
-    'TabA3': EqA3A4,
-    'TabA4': EqA3A4,
-    'TabA5': EqA5A6,
-    'TabA6': EqA5A6,
-    'TabA7': EqA7,
-    'TabA9': None,  # both special
-    'TabSpecial': None
-}
-
-# Special Case Equations noted in table subscripts
-
-def EqA3A4_XHS(a, Tsub, TKinv, **kwargs):
-    return a[0] + a[1] * TKinv + a[2] * Tsub**2
-
-def EqA3_XSO3(a, TK, TKinv):
-    return a[0] + a[1] * (TKinv - 1/298.15) + a[2] * np.log(TK / 298.15)
-
+# dictionary of special cases
 EqSpecial = {
     'TabA2': {
         'MgSO4': EqA2_MgSO4
@@ -118,45 +95,88 @@ EqSpecial = {
         'H-Cl': EqA9_HCl,
         'H-SO4': EqA9_HSO4
     },
-    'TabSpecial':{
+}
+
+# Special case equations used in Mathis Hain's code.
+def EqSpecial_Na2SO4_Moller(a, TK, lnTK, **kwargs):
+    return (
+        a[0] +
+        a[1] * TK +
+        a[2] / TK +
+        a[3] * lnTK +
+        a[4] / (TK - 263) +
+        a[5] * TK**2 +
+        a[6] / (680. - TK)
+    )
+
+def EqSpecial_MgHSO4(a, Tsub, **kwargs):
+    return a[0] + a[1] * Tsub
+
+# add these to dictionary
+EqSpecial['TabSpecial'] = {
         'Na2SO4': EqSpecial_Na2SO4_Moller,
         'Mg(HSO4)2': EqSpecial_MgHSO4
     }
-}
 
-params = {k: np.zeros((N_cations, N_anions, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
+def calc_beta_C(TK):
+    """
+    Calculate matrices of beta_0, beta_1, beta_2 and C_phi at given TK.
 
-for table in TabEqs:
-    # print(table)
-    for (param, salt), g in TABLES[table].groupby(['Parameter', 'Salt']):
-        # print(salt)
-        p, n = break_salt(salt)
+    Matrices are constructed from tables A1-A9 of Millero and Pierrot (1998; 
+    doi:10.1023/A:1009656023546), with modifications implemented by Hain et 
+    al (2015).
+
+    Parameters
+    ----------
+    TK : array-like
+        Temperature in Kelvin
+    
+    Returns
+    -------
+    dict
+        Containing {beta_0, beta_1, beta_2, C_phi}
+    """
+    TKinv = 1. / TK
+    lnTK = np.log(TK)
+    Tsub = TK - 298.15
+
+    # create blank parameter tables
+    params = {k: np.zeros((N_cations, N_anions, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
+
+    # All except Table A8 - Temperature Sensitive
+    for table in TabEqs:
+        # iterate through each parameter type and salt in each table.
+        for (param, salt), g in TABLES[table].groupby(['Parameter', 'Salt']):
+            p, n = break_salt(salt)  # identify which ions are involved
+            if (p in Pind) and (n in Nind):
+                # get the matrix indices of those ions
+                pi = Pind[p]
+                ni = Nind[n]
+                
+                eqn = TabEqs[table]  # identify the correct equation
+                if table in EqSpecial:  # does the table have special cases?
+                    if salt in EqSpecial[table]:  # is this salt a special case?
+                        eqn = EqSpecial[table][salt]  # if so, use the special equation.
+
+                # calculate the parameter values and store them
+                params[param][pi, ni] = eqn(a=g.values[0][2:], TK=TK, Tsub=Tsub, TKinv=TKinv, lnTK=lnTK)
+
+    # Table A8 - Constants
+    for i, row in TABLES['TabA8'].iterrows():
+        p, n = break_salt(row.Salt)
         if (p in Pind) and (n in Nind):
             pi = Pind[p]
             ni = Nind[n]
-            
-            eqn = TabEqs[table]
-            if table in EqSpecial:
-                if salt in EqSpecial[table]:
-                    eqn = EqSpecial[table][salt]             
-
-            if (p == 'Mg') & (n == 'HSO4'):
-                print(table, param, g.values[0][2:], eqn(a=g.values[0][2:], TK=TK, Tsub=Tsub, TKinv=TKinv, lnTK=lnTK))
-            # if (table == 'TabA1') & (salt == 'NaCl'):
-            #     print(param, p, n, g.values[0][2:])
-            #     print(eqn(a=g.values[0][2:], TK=TK, Tsub=Tsub, TKinv=TKinv, lnT=lnTK))
-            params[param][pi, ni] = eqn(a=g.values[0][2:], TK=TK, Tsub=Tsub, TKinv=TKinv, lnTK=lnTK)
-
-# Table A8 - constants
-for i, row in TABLES['TabA8'].iterrows():
-    p, n = break_salt(row.Salt)
-    if (p in Pind) and (n in Nind):
-        pi = Pind[p]
-        ni = Nind[n]
-        for param in params:
-            params[param][pi, ni] = row[param]
+            for param in params:
+                params[param][pi, ni] = row[param]
+    
+    return params
 
 
+# testing
+TK = np.array([15, 25, 35]) + 298.15
+
+params = calc_beta_C(TK)
 
 test_params = PitzerParams(T=TK)
 
