@@ -7,7 +7,7 @@ from .helpers import MyAMI_parameter_file, expand_dims, match_dims, load_params
 
 # dictionaries of ions containing their matrix indices
 # positive ions H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
-Pind = {
+CA_IND = {
     'H': 0,
     'Na': 1,
     'K': 2,
@@ -17,7 +17,7 @@ Pind = {
 }
 
 # negative ions  OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
-Nind = {
+AN_IND = {
     'OH': 0,
     'Cl': 1,
     'B(OH)4': 2,
@@ -28,12 +28,12 @@ Nind = {
 }
 
 # count ions
-N_cations = len(Pind)  # H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
-N_anions = len(Nind)  # OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
+N_CA = len(CA_IND)  # H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
+N_AN = len(AN_IND)  # OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
 
 # build a regex for pulling ions out of salt names
-recations = '|'.join(Pind.keys())
-reanions = '|'.join(Nind.keys())
+recations = '|'.join(CA_IND.keys())
+reanions = '|'.join(AN_IND.keys())
 reanions = reanions.replace('(', '\(').replace(')', '\)')  # escape brackets
 sm = re.compile('^(' + recations + ')[0-9]?\(?(' + reanions + ')\)?[0-9]?$')
 
@@ -52,8 +52,8 @@ def break_salt(s):
         return None, None
 
 # dictionary containing all valid ions
-Iind = Pind.copy()
-Iind.update(Nind)
+Iind = CA_IND.copy()
+Iind.update(AN_IND)
 
 # helper functions for converting tables into calculationg matrices
 
@@ -111,7 +111,7 @@ def EqA7(a, TK, **kwargs):
     )
 
 # link tables to equations
-TabEqs = {
+EQ_TABLES = {
     'TabA1': EqA1,
     'TabA2': EqA2,
     'TabA3': EqA3A4,
@@ -152,7 +152,7 @@ def EqA9_HSO4(a, TK, **kwargs):
         )
 
 # dictionary of special cases
-EqSpecial = {
+EQ_SPECIAL = {
     'TabA2': {
         'MgSO4': EqA2_MgSO4
     },
@@ -171,7 +171,7 @@ EqSpecial = {
 }
 
 # Special case equations used in Mathis Hain's code.
-def EqSpecial_Na2SO4_Moller(a, TK, lnTK, **kwargs):
+def EQ_SPECIAL_Na2SO4_Moller(a, TK, lnTK, **kwargs):
     return (
         a[0] +
         a[1] * TK +
@@ -182,13 +182,13 @@ def EqSpecial_Na2SO4_Moller(a, TK, lnTK, **kwargs):
         a[6] / (680. - TK)
     )
 
-def EqSpecial_MgHSO4(a, Tsub, **kwargs):
+def EQ_SPECIAL_MgHSO4(a, Tsub, **kwargs):
     return a[0] + a[1] * Tsub
 
 # add these to dictionary
-EqSpecial['TabSpecial'] = {
-        'Na2SO4': EqSpecial_Na2SO4_Moller,
-        'Mg(HSO4)2': EqSpecial_MgHSO4
+EQ_SPECIAL['TabSpecial'] = {
+        'Na2SO4': EQ_SPECIAL_Na2SO4_Moller,
+        'Mg(HSO4)2': EQ_SPECIAL_MgHSO4
     }
 
 # Phi and Theta Equation
@@ -227,22 +227,22 @@ def calc_beta_C(TK):
     Tsub = TK - 298.15
 
     # create blank parameter tables
-    params = {k: np.zeros((N_cations, N_anions, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
+    params = {k: np.zeros((N_CA, N_AN, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
 
     # All except Table A8 - Temperature Sensitive
-    for table in TabEqs:
+    for table in EQ_TABLES:
         # iterate through each parameter type and salt in each table.
         for (param, salt), g in TABLES[table].groupby(['Parameter', 'Salt']):
             p, n = break_salt(salt)  # identify which ions are involved
-            if (p in Pind) and (n in Nind):
+            if (p in CA_IND) and (n in AN_IND):
                 # get the matrix indices of those ions
-                pi = Pind[p]
-                ni = Nind[n]
+                pi = CA_IND[p]
+                ni = AN_IND[n]
                 
-                eqn = TabEqs[table]  # identify the correct equation
-                if table in EqSpecial:  # does the table have special cases?
-                    if salt in EqSpecial[table]:  # is this salt a special case?
-                        eqn = EqSpecial[table][salt]  # if so, use the special equation.
+                eqn = EQ_TABLES[table]  # identify the correct equation
+                if table in EQ_SPECIAL:  # does the table have special cases?
+                    if salt in EQ_SPECIAL[table]:  # is this salt a special case?
+                        eqn = EQ_SPECIAL[table][salt]  # if so, use the special equation.
 
                 # calculate the parameter values and store them
                 params[param][pi, ni] = eqn(a=g.values[0][2:], TK=TK, Tsub=Tsub, TKinv=TKinv, lnTK=lnTK)
@@ -250,9 +250,9 @@ def calc_beta_C(TK):
     # Table A8 - Constants
     for i, row in TABLES['TabA8'].iterrows():
         p, n = break_salt(row.Salt)
-        if (p in Pind) and (n in Nind):
-            pi = Pind[p]
-            ni = Nind[n]
+        if (p in CA_IND) and (n in AN_IND):
+            pi = CA_IND[p]
+            ni = AN_IND[n]
             for param in params:
                 params[param][pi, ni] = row[param]
     
@@ -275,17 +275,17 @@ def calc_Theta_Phi(TK):
     """
 
     # create empty arrays
-    Theta_positive = np.zeros((N_cations, N_cations, *TK.shape))
-    Theta_negative = np.zeros((N_anions, N_anions, *TK.shape))
-    Phi_PPN = np.zeros((N_cations, N_cations, N_anions, *TK.shape))
-    Phi_NNP = np.zeros((N_anions, N_anions,  N_cations, *TK.shape))
+    Theta_positive = np.zeros((N_CA, N_CA, *TK.shape))
+    Theta_negative = np.zeros((N_AN, N_AN, *TK.shape))
+    Phi_PPN = np.zeros((N_CA, N_CA, N_AN, *TK.shape))
+    Phi_NNP = np.zeros((N_AN, N_AN, N_CA, *TK.shape))
 
     # Assign static values from Table A11
     for _, row in TABA11.iterrows():
         ions = row.Pair.split('-')
         index = get_ion_index(row.Pair)
 
-        if ions[0] in Pind:
+        if ions[0] in CA_IND:
             if len(ions) == 2:
                 Theta_positive[index] = row.Value
                 Theta_positive[index[::-1]] = row.Value
@@ -293,7 +293,7 @@ def calc_Theta_Phi(TK):
                 Phi_PPN[index] = row.Value
                 Phi_PPN[index[1], index[0], index[2]] = row.Value
         
-        if ions[0] in Nind:
+        if ions[0] in AN_IND:
             if len(ions) == 2:
                 Theta_negative[index] = row.Value
                 Theta_negative[index[::-1]] = row.Value
@@ -311,14 +311,14 @@ def calc_Theta_Phi(TK):
         val = EqA10(a, TK)  # calculate value
         
         # assign value
-        if ions[0] in Pind:
+        if ions[0] in CA_IND:
             if len(ions) == 2:
                 Theta_positive[index] = val
                 Theta_positive[index[::-1]] = val
             elif len(ions) == 3:
                 Phi_PPN[index] = val
                 Phi_PPN[index[1], index[0], index[2]] = val
-        if ions[0] in Nind:
+        if ions[0] in AN_IND:
             if len(ions) == 2:
                 Theta_negative[index] = val
                 Theta_negative[index[::-1]] = val
@@ -337,14 +337,14 @@ def calc_Theta_Phi(TK):
     for ionstr, v in special.items():
         ions = ionstr.split('-')
         index = get_ion_index(ionstr)
-        if ions[0] in Pind:
+        if ions[0] in CA_IND:
             if len(ions) == 2:
                 Theta_positive[index] = v
                 Theta_positive[index[::-1]] = v
             elif len(ions) == 3:
                 Phi_PPN[index] = v
                 Phi_PPN[index[1], index[0], index[2]] = v
-        if ions[0] in Nind:
+        if ions[0] in AN_IND:
             if len(ions) == 2:
                 Theta_negative[index] = v
                 Theta_negative[index[::-1]] = v
