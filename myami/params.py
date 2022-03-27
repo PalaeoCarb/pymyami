@@ -58,6 +58,8 @@ def build_salt(p, n):
         return f'{p}{n}'
     
 def break_salt(s):
+    if '-' in s:
+        return s.split('-')
     for p in Pind:
         if s.startswith(p):
             s = re.sub(p + '2?\(?', '', s)
