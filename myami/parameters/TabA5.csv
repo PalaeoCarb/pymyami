@@ -4,7 +4,7 @@ Parameter,Salt,a,b,c,Range,Reference
 beta_0,MgBr2,0.432675,-5.62E-5,,0-50,(a)(b)
 beta_1,MgBr2,1.75275,3.8625E-3,,,
 C_phi,MgBr2,0.003124,,,,
-beta_0,Mg(B(OH)4)2,0.623,6.496E-3,,5-55,(c)
+beta_0,Mg(B(OH)4)2,-0.623,6.496E-3,,5-55,(c) corrected after Simonson et al 1988 first param is negative
 beta_1,Mg(B(OH)4)2,0.2515,-0.01713
 beta_2,Mg(B(OH)4)2,-11.47,0,-3.24E-3,,
 C_phi,Mg(B(OH)4)2,0,,,,

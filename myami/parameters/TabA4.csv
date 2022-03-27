@@ -9,7 +9,7 @@ beta_1,K2CO3,1.433,4.36E-3,2.07E-5,,
 C_phi,K2CO3,0.0005,,,,
 beta_0,KB(OH)4,0.1469,2.881E-3,,0-50,(c)
 beta_1,KB(OH)4,-0.0989,-6.876E-3,,,
-C_phi,KB(OH)4,-0.05643,-9.56E-4,,,
+C_phi,KB(OH)4,-56.43e-3,-9.56E-3,,,corrected after Simonson et al 1988
 beta_0,KHS,1.017,-251.04,,5-25,(d)(e)
 beta_1,KHS,0,,,,
 C_phi,KHS,-0.033,,,,
