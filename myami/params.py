@@ -59,6 +59,7 @@ def build_salt(p, n):
     
 recations = '|'.join(Pind.keys())
 reanions = '|'.join(Nind.keys())
+reanions = reanions.replace('(', '\(').replace(')', '\)')  # escape brackets
 sm = re.compile('^(' + recations + ')[0-9]?\(?(' + reanions + ')\)?[0-9]?$')
 
 def break_salt(s):
@@ -93,14 +94,14 @@ def get_ion_index(ions):
 
 # Load Parameter Tables
 TABLES = {}
-fs = glob(MyAMI_parameter_file('TabA*.csv'))
+fs = glob(MyAMI_parameter_file('Tab*.csv'))
 for f in fs:
     fname = os.path.split(f)[-1].replace('.csv', '')
     TABLES[fname] = pd.read_csv(f, comment='#')
+    TABLES[fname].fillna(0, inplace=True)
 
 TABA11 = filter_terms(TABLES['TabA11'], Iind)
 TABA10 = filter_terms(TABLES['TabA10'], Iind)
-TABA10.fillna(0, inplace=True)
 
 # Table-Specific equations
 def EqA10(a, TK):
@@ -205,7 +206,6 @@ def calc_beta_C(TK, pitzer_params):
     # Na = cation
     beta_0[1, 0], beta_1[1, 0], C_phi[1, 0] = Equation_NaOH  # Na-OH
     beta_0[1, 1], beta_1[1, 1], C_phi[1, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['NaCl'])  # Na-Cl
-    print('orig', beta_0[1, 1], beta_1[1, 1], C_phi[1, 1])
     beta_0[1, 2], beta_1[1, 2], C_phi[1, 2] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaBOH4'])  # Na-B(OH)4
     beta_0[1, 3], beta_1[1, 3], C_phi[1, 3] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHCO3'])  # Na-HCO3
     beta_0[1, 4], beta_1[1, 4], C_phi[1, 4] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHSO4'])  # Na-HSO4
