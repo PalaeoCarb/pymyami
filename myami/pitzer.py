@@ -49,7 +49,7 @@ def calc_seawater_ions(Sal=35., Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=N
 
 
 def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None,
-                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=None):
+                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=0):
     """
     Calculate Ks at given conditions using MyAMI model.
     """
@@ -95,7 +95,7 @@ def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, 
 
 
 def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
-                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=None):
+                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=0):
     """Calculate Gammas and Alphas for K calculations.
 
     Parameters
