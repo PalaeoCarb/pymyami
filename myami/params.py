@@ -103,7 +103,119 @@ for f in fs:
 TABA11 = filter_terms(TABLES['TabA11'], Iind)
 TABA10 = filter_terms(TABLES['TabA10'], Iind)
 
-# Table-Specific equations
+
+# Table equations for beta and C calculation
+def EqA1(a, TK, TKinv, lnTK, **kwargs):
+    # T in Kelvin
+    return (
+        a[0] +
+        a[1] * TK +
+        a[2] * TKinv +
+        a[3] * lnTK +
+        a[4] / (TK - 263) +
+        a[5] * TK**2 +
+        a[6] / (680 - TK) +
+        a[7] / (TK - 227)
+    )
+
+def EqA2(a, TK, **kwargs):
+    return a[0] + a[1] * TK + a[2] * TK**2
+
+def EqA3A4(a, Tsub, **kwargs):
+    return a[0] + a[1] * Tsub + a[2] * Tsub**2
+
+def EqA5A6(a, TK, Tsub, **kwargs):
+    return a[0] + a[1] * Tsub + a[2] * (TK - 303.15)**2
+
+def EqA7(a, TK, **kwargs):
+    PR, PJ, PLR = a[0:3]
+    return (
+        PR + PJ * (8834524.63945833 - 88893.4225 * PLR) * (1 / TK - (1 / 298.15))
+        + PJ / 6 * (TK**2 - 88893.4225)
+    )
+
+# link tables to equations
+TabEqs = {
+    'TabA1': EqA1,
+    'TabA2': EqA2,
+    'TabA3': EqA3A4,
+    'TabA4': EqA3A4,
+    'TabA5': EqA5A6,
+    'TabA6': EqA5A6,
+    'TabA7': EqA7,
+    'TabA9': None,  # both special
+    'TabSpecial': None  # special cases handled below
+}
+
+# Special Case Equations noted in table subscripts
+def EqA2_MgSO4(a, TK, **kwargs):
+    return (
+        a[0] * ((TK / 2) + (88804) / (2 * TK) - 298)
+        + a[1] * ((TK**2 / 6) + (26463592) / (3 * TK) - (88804 / 2))
+        + a[2] * (TK**3 / 12 + 88804 * 88804 / (4 * TK) - 26463592 / 3)
+        + a[3]
+        * ((TK**4 / 20) + 88804 * 26463592 / (5 * TK) - 88804 * 88804 / 4)
+        + a[4] * (298 - (88804 / TK))
+        + a[5]
+    )
+
+def EqA3A4_XHS(a, Tsub, TKinv, **kwargs):
+    return a[0] + a[1] * TKinv + a[2] * Tsub**2
+
+def EqA3_XSO3(a, TK, TKinv):
+    return a[0] + a[1] * (TKinv - 1/298.15) + a[2] * np.log(TK / 298.15)
+
+def EqA9_HCl(a, TK, **kwargs):
+    return a[0] + a[1] * TK + a[2] / TK
+
+def EqA9_HSO4(a, TK, **kwargs):
+    TKsub3 = TK - 328.15
+    return (
+        a[0] + TKsub3 * 1e-3 * 
+        (a[1] + TKsub3 * ((a[2] / 2) + TKsub3 * (a[3] / 6)))
+        )
+
+# dictionary of special cases
+EqSpecial = {
+    'TabA2': {
+        'MgSO4': EqA2_MgSO4
+    },
+    'TabA3': {
+        'KHS': EqA3A4_XHS,
+        'Na2SO3': EqA3_XSO3,
+        'NaHSO3': EqA3_XSO3,
+    },
+    'TabA4': {
+        'KHS': EqA3A4_XHS,
+    },
+    'TabA9': {
+        'H-Cl': EqA9_HCl,
+        'H-SO4': EqA9_HSO4
+    },
+}
+
+# Special case equations used in Mathis Hain's code.
+def EqSpecial_Na2SO4_Moller(a, TK, lnTK, **kwargs):
+    return (
+        a[0] +
+        a[1] * TK +
+        a[2] / TK +
+        a[3] * lnTK +
+        a[4] / (TK - 263) +
+        a[5] * TK**2 +
+        a[6] / (680. - TK)
+    )
+
+def EqSpecial_MgHSO4(a, Tsub, **kwargs):
+    return a[0] + a[1] * Tsub
+
+# add these to dictionary
+EqSpecial['TabSpecial'] = {
+        'Na2SO4': EqSpecial_Na2SO4_Moller,
+        'Mg(HSO4)2': EqSpecial_MgHSO4
+    }
+
+# Phi and Theta Equation
 def EqA10(a, TK):
     """
     Calculate Phi and Theta parameters as a function of TK accoring to 
@@ -112,163 +224,218 @@ def EqA10(a, TK):
     TKsub = TK - 298.15
     return a[0] + a[1] / TK + a[2] * 1e-4 * TK + a[3] * 1e-4 * TKsub + a[4] * 1e-6 * TKsub**2
 
-def EqA1(a, T, Tinv, lnT):
-    # T in Kelvin
-    return (
-        a[:, 0] +
-        a[:, 1] * T +
-        a[:, 2] * Tinv +
-        a[:, 3] * lnT +
-        a[:, 4] / (T - 263) +
-        a[:, 5] * T**2 +
-        a[:, 6] / (680 - T) +
-        a[:, 7] / (T - 227)
-    )
+# def EqA1(a, T, Tinv, lnT):
+#     # T in Kelvin
+#     return (
+#         a[:, 0] +
+#         a[:, 1] * T +
+#         a[:, 2] * Tinv +
+#         a[:, 3] * lnT +
+#         a[:, 4] / (T - 263) +
+#         a[:, 5] * T**2 +
+#         a[:, 6] / (680 - T) +
+#         a[:, 7] / (T - 227)
+#     )
 
-def calc_beta_C(TK, pitzer_params):
-    """Constructe beta_0, beta_1, beta_2 and C_phi matrices from Table A8
+
+def calc_beta_C(TK):
+    """
+    Calculate matrices of beta_0, beta_1, beta_2 and C_phi at given TK.
+
+    Matrices are constructed from tables A1-A9 of Millero and Pierrot (1998; 
+    doi:10.1023/A:1009656023546), with modifications implemented by Hain et 
+    al (2015).
 
     Parameters
     ----------
     TK : array-like
         Temperature in Kelvin
-    pitzer_params : dict
-        containing pitzer params for each salt
-        
+    
     Returns
     -------
-    tuple of array-like
-        Containing (beta_0, beta_1, beta_2, C_phi)
+    dict
+        Containing {beta_0, beta_1, beta_2, C_phi}
     """
-    
-    Tinv = 1. / TK
+    TKinv = 1. / TK
     lnTK = np.log(TK)
-    # ln_of_Tdiv29815 = np.log(T / 298.15)
-    Tpower2 = TK**2.
-    Tpower3 = TK**3.
-    Tpower4 = TK**4.
-    TC = TK - 298.15
+    Tsub = TK - 298.15
+
+    # create blank parameter tables
+    params = {k: np.zeros((N_cations, N_anions, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
+
+    # All except Table A8 - Temperature Sensitive
+    for table in TabEqs:
+        # iterate through each parameter type and salt in each table.
+        for (param, salt), g in TABLES[table].groupby(['Parameter', 'Salt']):
+            p, n = break_salt(salt)  # identify which ions are involved
+            if (p in Pind) and (n in Nind):
+                # get the matrix indices of those ions
+                pi = Pind[p]
+                ni = Nind[n]
+                
+                eqn = TabEqs[table]  # identify the correct equation
+                if table in EqSpecial:  # does the table have special cases?
+                    if salt in EqSpecial[table]:  # is this salt a special case?
+                        eqn = EqSpecial[table][salt]  # if so, use the special equation.
+
+                # calculate the parameter values and store them
+                params[param][pi, ni] = eqn(a=g.values[0][2:], TK=TK, Tsub=Tsub, TKinv=TKinv, lnTK=lnTK)
+
+    # Table A8 - Constants
+    for i, row in TABLES['TabA8'].iterrows():
+        p, n = break_salt(row.Salt)
+        if (p in Pind) and (n in Nind):
+            pi = Pind[p]
+            ni = Nind[n]
+            for param in params:
+                params[param][pi, ni] = row[param]
     
-    # Table A8 - - - Pitzer parameters unknown; beta's known for 25degC
-    Equation_KHSO4 = np.array([-0.0003, 0.1735, 0.0])
+    return params
 
-    # Equation_MgHSO42 = np.array([0.4746, 1.729, 0.0])  #  XX no Cphi #from Harvie et al 1984 as referenced in MP98
-    Equation_MgHSO42 = np.array(
-        [   
-            -0.61656 - 0.00075174 * TC,
-            7.716066 - 0.0164302 * TC,
-            0.43026 + 0.00199601 * TC,
-        ]
-    )  # from Pierrot and Millero 1997 as used in the Excel file
+# def calc_beta_C(TK, pitzer_params):
+#     """Constructe beta_0, beta_1, beta_2 and C_phi matrices from Table A8
 
-    # Equation_MgHCO32 = np.array([0.329, 0.6072, 0.0])  # Harvie et al 1984
-    Equation_MgHCO32 = np.array([0.03, 0.8, 0.0])  # Millero and Pierrot redetermined after Thurmond and Millero 1982
-    Equation_CaHSO42 = np.array([0.2145, 2.53, 0.0])
-    # Equation_CaHCO32 = np.array([0.4, 2.977, 0.0])  # Harvie et al. 1984  - ERRONEOUS, see comments by Zeebe and response by Hain
-    Equation_CaHCO32 = np.array([0.2, 0.3, 0])  # He and Morse 1993 after Pitzeretal85
-    Equation_CaOH2 = np.array([-0.1747, -0.2303, -5.72])  # according to Harvie84, the -5.72 should be for beta2, not Cphi (which is zero) -- but likely typo in original ref since 2:1 electrolytes don't usually have a beta2
-    Equation_SrHSO42 = Equation_CaHSO42
-    Equation_SrHCO32 = Equation_CaHCO32
-    Equation_SrOH2 = Equation_CaOH2
-    # Equation_MgOHCl = np.array([-0.1, 1.658, 0.0])
-    Equation_NaOH = np.array([0.0864, 0.253, 0.0044])  # Rai et al 2002 ref to Pitzer91(CRC Press)
-    Equation_CaSO4_PnM74 = np.array([0.2, 2.65, 0])  # Pitzer and Mayorga74
+#     Parameters
+#     ----------
+#     TK : array-like
+#         Temperature in Kelvin
+#     pitzer_params : dict
+#         containing pitzer params for each salt
+        
+#     Returns
+#     -------
+#     tuple of array-like
+#         Containing (beta_0, beta_1, beta_2, C_phi)
+#     """
+    
+#     Tinv = 1. / TK
+#     lnTK = np.log(TK)
+#     # ln_of_Tdiv29815 = np.log(T / 298.15)
+#     Tpower2 = TK**2.
+#     Tpower3 = TK**3.
+#     Tpower4 = TK**4.
+#     TC = TK - 298.15
+    
+#     # Table A8 - - - Pitzer parameters unknown; beta's known for 25degC
+#     Equation_KHSO4 = np.array([-0.0003, 0.1735, 0.0])
 
-    # param_HSO4 = np.array([[0.065, 0.134945, 0.022374, 7.2E-5],
-    #                           [-15.009, -2.405945, 0.335839, -0.004379],
-    #                           [0.008073, -0.113106, -0.003553, 3.57E-5]])  # XXXXX two equations for C
-    # param_HSO4_Clegg94 = np.array([[0.0348925351, 4.97207803, 0.317555182, 0.00822580341],
-    #                                  [-1.06641231, -74.6840429, -2.26268944, -0.0352968547],
-    #                                  [0.00764778951, -0.314698817, -0.0211926525, 0.000586708222],
-    #                                  [0.0, -0.176776695, -0.731035345, 0.0]])
+#     # Equation_MgHSO42 = np.array([0.4746, 1.729, 0.0])  #  XX no Cphi #from Harvie et al 1984 as referenced in MP98
+#     Equation_MgHSO42 = np.array(
+#         [   
+#             -0.61656 - 0.00075174 * TC,
+#             7.716066 - 0.0164302 * TC,
+#             0.43026 + 0.00199601 * TC,
+#         ]
+#     )  # from Pierrot and Millero 1997 as used in the Excel file
+
+#     # Equation_MgHCO32 = np.array([0.329, 0.6072, 0.0])  # Harvie et al 1984
+#     Equation_MgHCO32 = np.array([0.03, 0.8, 0.0])  # Millero and Pierrot redetermined after Thurmond and Millero 1982
+#     Equation_CaHSO42 = np.array([0.2145, 2.53, 0.0])
+#     # Equation_CaHCO32 = np.array([0.4, 2.977, 0.0])  # Harvie et al. 1984  - ERRONEOUS, see comments by Zeebe and response by Hain
+#     Equation_CaHCO32 = np.array([0.2, 0.3, 0])  # He and Morse 1993 after Pitzeretal85
+#     Equation_CaOH2 = np.array([-0.1747, -0.2303, -5.72])  # according to Harvie84, the -5.72 should be for beta2, not Cphi (which is zero) -- but likely typo in original ref since 2:1 electrolytes don't usually have a beta2
+#     Equation_SrHSO42 = Equation_CaHSO42
+#     Equation_SrHCO32 = Equation_CaHCO32
+#     Equation_SrOH2 = Equation_CaOH2
+#     # Equation_MgOHCl = np.array([-0.1, 1.658, 0.0])
+#     Equation_NaOH = np.array([0.0864, 0.253, 0.0044])  # Rai et al 2002 ref to Pitzer91(CRC Press)
+#     Equation_CaSO4_PnM74 = np.array([0.2, 2.65, 0])  # Pitzer and Mayorga74
+
+#     # param_HSO4 = np.array([[0.065, 0.134945, 0.022374, 7.2E-5],
+#     #                           [-15.009, -2.405945, 0.335839, -0.004379],
+#     #                           [0.008073, -0.113106, -0.003553, 3.57E-5]])  # XXXXX two equations for C
+#     # param_HSO4_Clegg94 = np.array([[0.0348925351, 4.97207803, 0.317555182, 0.00822580341],
+#     #                                  [-1.06641231, -74.6840429, -2.26268944, -0.0352968547],
+#     #                                  [0.00764778951, -0.314698817, -0.0211926525, 0.000586708222],
+#     #                                  [0.0, -0.176776695, -0.731035345, 0.0]])
     
 
-    ############################################################
-    # beta_0, beta_1 and C_phi values arranged into arrays
+#     ############################################################
+#     # beta_0, beta_1 and C_phi values arranged into arrays
 
 
-    beta_0 = np.zeros((N_cations, N_anions, *TK.shape))  # creates empty array
-    beta_1 = np.zeros((N_cations, N_anions, *TK.shape))  # creates empty array
-    C_phi = np.zeros((N_cations, N_anions, *TK.shape))  # creates empty array
+#     beta_0 = np.zeros((N_cations, N_anions, *TK.shape))  # creates empty array
+#     beta_1 = np.zeros((N_cations, N_anions, *TK.shape))  # creates empty array
+#     C_phi = np.zeros((N_cations, N_anions, *TK.shape))  # creates empty array
 
-    # H = cation
-    # beta_0[0, 0], beta_1[0, 0], C_phi[0, 0] = n / a
-    beta_0[0, 1], beta_1[0, 1], C_phi[0, 1] = Equation_HCl(TK, pitzer_params['HCl'])  # H-Cl
-    # beta_0[0, 2], beta_1[0, 2], C_phi[0, 2] = n / a
-    # beta_0[0, 3], beta_1[0, 3], C_phi[0, 3] = n / a
-    # beta_0[0, 4], beta_1[0, 4], C_phi[0, 4] = n / a
-    # beta_0[0, 5], beta_1[0, 5], C_phi[0, 5] = n / a
-    # beta_0[0, 6], beta_1[0, 6], C_phi[0, 6] = Equation_HSO4(TK, param_HSO4)
-    # beta_0[0, 6], beta_1[0, 6], C_phi[0, 6] C1_HSO4] = Equation_HSO4_Clegg94(TK, param_HSO4_Clegg94)
-    C1_HSO4 = 0  # What does this do?
-    # print beta_0[0, :], beta_1[0, :]#, beta_2[0, :]
+#     # H = cation
+#     # beta_0[0, 0], beta_1[0, 0], C_phi[0, 0] = n / a
+#     beta_0[0, 1], beta_1[0, 1], C_phi[0, 1] = Equation_HCl(TK, pitzer_params['HCl'])  # H-Cl
+#     # beta_0[0, 2], beta_1[0, 2], C_phi[0, 2] = n / a
+#     # beta_0[0, 3], beta_1[0, 3], C_phi[0, 3] = n / a
+#     # beta_0[0, 4], beta_1[0, 4], C_phi[0, 4] = n / a
+#     # beta_0[0, 5], beta_1[0, 5], C_phi[0, 5] = n / a
+#     # beta_0[0, 6], beta_1[0, 6], C_phi[0, 6] = Equation_HSO4(TK, param_HSO4)
+#     # beta_0[0, 6], beta_1[0, 6], C_phi[0, 6] C1_HSO4] = Equation_HSO4_Clegg94(TK, param_HSO4_Clegg94)
+#     C1_HSO4 = 0  # What does this do?
+#     # print beta_0[0, :], beta_1[0, :]#, beta_2[0, :]
 
-    # Na = cation
-    beta_0[1, 0], beta_1[1, 0], C_phi[1, 0] = Equation_NaOH  # Na-OH
-    beta_0[1, 1], beta_1[1, 1], C_phi[1, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['NaCl'])  # Na-Cl
-    beta_0[1, 2], beta_1[1, 2], C_phi[1, 2] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaBOH4'])  # Na-B(OH)4
-    beta_0[1, 3], beta_1[1, 3], C_phi[1, 3] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHCO3'])  # Na-HCO3
-    beta_0[1, 4], beta_1[1, 4], C_phi[1, 4] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHSO4'])  # Na-HSO4
-    beta_0[1, 5], beta_1[1, 5], C_phi[1, 5] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['Na2CO3'])  # Na-CO3 
-    # beta_0[1, 6], beta_1[1, 6], C_phi[1, 6] = Equation_Na2SO4_TabA3(TK, ln_of_Tdiv29815, pitzer_params['Na2SO4'])  # Na-SO4
-    beta_0[1, 6], beta_1[1, 6], C_phi[1, 6] = Equation_Na2SO4_Moller(TK, lnTK, pitzer_params['Na2SO4_Moller'])  # Na-SO4
+#     # Na = cation
+#     beta_0[1, 0], beta_1[1, 0], C_phi[1, 0] = Equation_NaOH  # Na-OH
+#     beta_0[1, 1], beta_1[1, 1], C_phi[1, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['NaCl'])  # Na-Cl
+#     beta_0[1, 2], beta_1[1, 2], C_phi[1, 2] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaBOH4'])  # Na-B(OH)4
+#     beta_0[1, 3], beta_1[1, 3], C_phi[1, 3] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHCO3'])  # Na-HCO3
+#     beta_0[1, 4], beta_1[1, 4], C_phi[1, 4] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['NaHSO4'])  # Na-HSO4
+#     beta_0[1, 5], beta_1[1, 5], C_phi[1, 5] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['Na2CO3'])  # Na-CO3 
+#     # beta_0[1, 6], beta_1[1, 6], C_phi[1, 6] = Equation_Na2SO4_TabA3(TK, ln_of_Tdiv29815, pitzer_params['Na2SO4'])  # Na-SO4
+#     beta_0[1, 6], beta_1[1, 6], C_phi[1, 6] = Equation_Na2SO4_Moller(TK, lnTK, pitzer_params['Na2SO4_Moller'])  # Na-SO4
 
-    # K = cation
-    beta_0[2, 0], beta_1[2, 0], C_phi[2, 0] = Equation_TabA7(TK, pitzer_params['KOH'])  # K-OH
-    beta_0[2, 1], beta_1[2, 1], C_phi[2, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['KCl'])  # K-Cl
-    beta_0[2, 2], beta_1[2, 2], C_phi[2, 2] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['KBOH4'])  # K-B(OH)4
-    beta_0[2, 3], beta_1[2, 3], C_phi[2, 3] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['KHCO3'])  # K-HCO3
-    beta_0[2, 4], beta_1[2, 4], C_phi[2, 4] = Equation_KHSO4  # K-HSO4
-    beta_0[2, 5], beta_1[2, 5], C_phi[2, 5] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['K2CO3'])  # K-CO3
-    beta_0[2, 6], beta_1[2, 6], C_phi[2, 6] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['K2SO4'])  # K-SO4
+#     # K = cation
+#     beta_0[2, 0], beta_1[2, 0], C_phi[2, 0] = Equation_TabA7(TK, pitzer_params['KOH'])  # K-OH
+#     beta_0[2, 1], beta_1[2, 1], C_phi[2, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['KCl'])  # K-Cl
+#     beta_0[2, 2], beta_1[2, 2], C_phi[2, 2] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['KBOH4'])  # K-B(OH)4
+#     beta_0[2, 3], beta_1[2, 3], C_phi[2, 3] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['KHCO3'])  # K-HCO3
+#     beta_0[2, 4], beta_1[2, 4], C_phi[2, 4] = Equation_KHSO4  # K-HSO4
+#     beta_0[2, 5], beta_1[2, 5], C_phi[2, 5] = Equation_TabA3andTabA4andTabA5(TC, pitzer_params['K2CO3'])  # K-CO3
+#     beta_0[2, 6], beta_1[2, 6], C_phi[2, 6] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['K2SO4'])  # K-SO4
 
-    # Mg = cation
-    # beta_0[3, 0], beta_1[3, 0], C_phi[3, 0] = n / a
-    beta_0[3, 1], beta_1[3, 1], C_phi[3, 1] = Equation1_TabA2(TK, pitzer_params['MgCl2'])  # Mg-Cl
-    beta_0[3, 2], beta_1[3, 2], C_phi[3, 2] = Equation_TabA3andTabA4andTabA5_Simonson(TK, pitzer_params['MgBOH42'])    # Mg-B(OH)4
-    beta_0[3, 3], beta_1[3, 3], C_phi[3, 3] = Equation_MgHCO32  # Mg-HCO3
-    beta_0[3, 4], beta_1[3, 4], C_phi[3, 4] = Equation_MgHSO42  # Mg-HSO4
-    # beta_0[3, 5], beta_1[3, 5], C_phi[3, 5] = n / a
-    beta_0[3, 6], beta_1[3, 6], C_phi[3, 6] = Equation2_TabA2(TK, Tpower2, Tpower3, Tpower4, pitzer_params['MgSO4'])   # Mg-SO4
-    # print beta_0[3, 6], beta_1[3, 6], C_phi[3, 6]
+#     # Mg = cation
+#     # beta_0[3, 0], beta_1[3, 0], C_phi[3, 0] = n / a
+#     beta_0[3, 1], beta_1[3, 1], C_phi[3, 1] = Equation1_TabA2(TK, pitzer_params['MgCl2'])  # Mg-Cl
+#     beta_0[3, 2], beta_1[3, 2], C_phi[3, 2] = Equation_TabA3andTabA4andTabA5_Simonson(TK, pitzer_params['MgBOH42'])    # Mg-B(OH)4
+#     beta_0[3, 3], beta_1[3, 3], C_phi[3, 3] = Equation_MgHCO32  # Mg-HCO3
+#     beta_0[3, 4], beta_1[3, 4], C_phi[3, 4] = Equation_MgHSO42  # Mg-HSO4
+#     # beta_0[3, 5], beta_1[3, 5], C_phi[3, 5] = n / a
+#     beta_0[3, 6], beta_1[3, 6], C_phi[3, 6] = Equation2_TabA2(TK, Tpower2, Tpower3, Tpower4, pitzer_params['MgSO4'])   # Mg-SO4
+#     # print beta_0[3, 6], beta_1[3, 6], C_phi[3, 6]
 
-    # Ca = cation
-    beta_0[4, 0], beta_1[4, 0], C_phi[4, 0] = Equation_CaOH2  # Ca-OH
-    beta_0[4, 1], beta_1[4, 1], C_phi[4, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['CaCl2'])  # Ca-Cl
-    beta_0[4, 2], beta_1[4, 2], C_phi[4, 2] = Equation_TabA3andTabA4andTabA5_Simonson(TK, pitzer_params['CaBOH42'])  # Ca-B(OH)4
-    beta_0[4, 3], beta_1[4, 3], C_phi[4, 3] = Equation_CaHCO32  # Ca-CO3
-    beta_0[4, 4], beta_1[4, 4], C_phi[4, 4] = Equation_CaHSO42  # Ca-HSO4
-    # beta_0[4, 5], beta_1[4, 5], C_phi[4, 5] = n / a
-    # beta_0[4, 6], beta_1[4, 6], C_phi[4, 6] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['CaSO4'])  # Ca-SO4
-    beta_0[4, 6], beta_1[4, 6], C_phi[4, 6] = Equation_CaSO4_PnM74  # Ca-SO4
+#     # Ca = cation
+#     beta_0[4, 0], beta_1[4, 0], C_phi[4, 0] = Equation_CaOH2  # Ca-OH
+#     beta_0[4, 1], beta_1[4, 1], C_phi[4, 1] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['CaCl2'])  # Ca-Cl
+#     beta_0[4, 2], beta_1[4, 2], C_phi[4, 2] = Equation_TabA3andTabA4andTabA5_Simonson(TK, pitzer_params['CaBOH42'])  # Ca-B(OH)4
+#     beta_0[4, 3], beta_1[4, 3], C_phi[4, 3] = Equation_CaHCO32  # Ca-CO3
+#     beta_0[4, 4], beta_1[4, 4], C_phi[4, 4] = Equation_CaHSO42  # Ca-HSO4
+#     # beta_0[4, 5], beta_1[4, 5], C_phi[4, 5] = n / a
+#     # beta_0[4, 6], beta_1[4, 6], C_phi[4, 6] = Equation_TabA1(TK, Tinv, lnTK, pitzer_params['CaSO4'])  # Ca-SO4
+#     beta_0[4, 6], beta_1[4, 6], C_phi[4, 6] = Equation_CaSO4_PnM74  # Ca-SO4
 
-    # Sr = cation
-    beta_0[5, 0], beta_1[5, 0], C_phi[5, 0] = Equation_SrOH2  # Sr-OH
-    beta_0[5, 1], beta_1[5, 1], C_phi[5, 1] = Equation_TabA7(TK, pitzer_params['SrCl2'])  # Sr-Cl
-    beta_0[5, 2], beta_1[5, 2], C_phi[5, 2] = Equation_TabA3andTabA4andTabA5_Simonson(TK, pitzer_params['SrBOH42'])  # Sr-B(OH)4
-    beta_0[5, 3], beta_1[5, 3], C_phi[5, 3] = Equation_SrHCO32  # Sr-HCO3
-    beta_0[5, 4], beta_1[5, 4], C_phi[5, 4] = Equation_SrHSO42  # Sr-HSO4
-    # beta_0[5, 5], beta_1[5, 5], C_phi[5, 5] = n / a
-    # beta_0[5, 6], beta_1[5, 6], C_phi[5, 6] = Equation_TabA1(TK, Tinv, lnTK, param_SrSO4)  # Sr-SO4
-    beta_0[5, 6], beta_1[5, 6], C_phi[5, 6] = Equation_CaSO4_PnM74  # Sr-SO4
+#     # Sr = cation
+#     beta_0[5, 0], beta_1[5, 0], C_phi[5, 0] = Equation_SrOH2  # Sr-OH
+#     beta_0[5, 1], beta_1[5, 1], C_phi[5, 1] = Equation_TabA7(TK, pitzer_params['SrCl2'])  # Sr-Cl
+#     beta_0[5, 2], beta_1[5, 2], C_phi[5, 2] = Equation_TabA3andTabA4andTabA5_Simonson(TK, pitzer_params['SrBOH42'])  # Sr-B(OH)4
+#     beta_0[5, 3], beta_1[5, 3], C_phi[5, 3] = Equation_SrHCO32  # Sr-HCO3
+#     beta_0[5, 4], beta_1[5, 4], C_phi[5, 4] = Equation_SrHSO42  # Sr-HSO4
+#     # beta_0[5, 5], beta_1[5, 5], C_phi[5, 5] = n / a
+#     # beta_0[5, 6], beta_1[5, 6], C_phi[5, 6] = Equation_TabA1(TK, Tinv, lnTK, param_SrSO4)  # Sr-SO4
+#     beta_0[5, 6], beta_1[5, 6], C_phi[5, 6] = Equation_CaSO4_PnM74  # Sr-SO4
     
-    # for 2:2 ion pairs beta_2 is needed
-    beta_2 = np.zeros((N_cations, N_anions, *TK.shape))
-    b2_param_MgSO4 = np.array([-13.764, 0.12121, -2.7642e-4, 0, -0.21515, -32.743])
+#     # for 2:2 ion pairs beta_2 is needed
+#     beta_2 = np.zeros((N_cations, N_anions, *TK.shape))
+#     b2_param_MgSO4 = np.array([-13.764, 0.12121, -2.7642e-4, 0, -0.21515, -32.743])
 
-    b2_param_MgBOH42 = np.array([-11.47, 0.0, -3.24e-3])
-    b2_param_CaBOH42 = np.array([-15.88, 0.0, -2.858e-3])
+#     b2_param_MgBOH42 = np.array([-11.47, 0.0, -3.24e-3])
+#     b2_param_CaBOH42 = np.array([-15.88, 0.0, -2.858e-3])
 
-    b2_param_CaSO4 = np.array([-55.7, 0])  # Pitzer and Mayorga74 
-    # b2_param_CaSO4 = [-1.29399287e2, 4.00431027e-1])  # Moller88
+#     b2_param_CaSO4 = np.array([-55.7, 0])  # Pitzer and Mayorga74 
+#     # b2_param_CaSO4 = [-1.29399287e2, 4.00431027e-1])  # Moller88
 
-    beta_2[3, 6] = Eq_b2_MgSO4(TK, Tpower2, Tpower3, Tpower4, b2_param_MgSO4)  # Mg-SO4
-    beta_2[3, 2] = Eq_b2_MgANDCaBOH42(TK, b2_param_MgBOH42)  # Mg-B(OH)4
-    beta_2[4, 2] = Eq_b2_MgANDCaBOH42(TK, b2_param_CaBOH42)  # Ca-B(OH)4
-    beta_2[5, 2] = beta_2[4, 2]  # Sr-B(OH)4
-    beta_2[4, 6] = Eq_b2_CaSO4(TK, b2_param_CaSO4)  # Ca-SO4
+#     beta_2[3, 6] = Eq_b2_MgSO4(TK, Tpower2, Tpower3, Tpower4, b2_param_MgSO4)  # Mg-SO4
+#     beta_2[3, 2] = Eq_b2_MgANDCaBOH42(TK, b2_param_MgBOH42)  # Mg-B(OH)4
+#     beta_2[4, 2] = Eq_b2_MgANDCaBOH42(TK, b2_param_CaBOH42)  # Ca-B(OH)4
+#     beta_2[5, 2] = beta_2[4, 2]  # Sr-B(OH)4
+#     beta_2[4, 6] = Eq_b2_CaSO4(TK, b2_param_CaSO4)  # Ca-SO4
 
-    return beta_0, beta_1, beta_2, C_phi, C1_HSO4
+#     return beta_0, beta_1, beta_2, C_phi, C1_HSO4
 
 def calc_Theta_Phi(TK):
     """
@@ -362,7 +529,12 @@ def calc_Theta_Phi(TK):
                 Phi_NNP[index] = v
                 Phi_NNP[index[1], index[0], index[2]] = v
 
-    return Theta_negative, Theta_positive, Phi_NNP, Phi_PPN
+    return {
+        'Theta_negative': Theta_negative, 
+        'Theta_positive': Theta_positive, 
+        'Phi_NNP': Phi_NNP, 
+        'Phi_PPN': Phi_PPN
+        }
 
 
 # Load Pitzer Parameters
@@ -498,9 +670,9 @@ def PitzerParams(T):
     # Pitzer equations, based on Millero and Pierrot (1998)
 
     # load pitzer params and expand dimensions to match T
-    pitzer_params = {k: expand_dims(v, T) for k, v in PITZER_PARAMS.items()}
+    # pitzer_params = {k: expand_dims(v, T) for k, v in PITZER_PARAMS.items()}
     
-    beta_0, beta_1, beta_2, C_phi, C1_HSO4 = calc_beta_C(T, pitzer_params)
+    out = calc_beta_C(T)
     
     #############################################################################
     # Data and T - based calculations to create arrays holding Theta and Phi values
@@ -509,7 +681,7 @@ def PitzerParams(T):
     # Theta of positive ions H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
     # Array to hold Theta values between ion two ions (for numbering see list above)
     
-    Theta_negative, Theta_positive, Phi_NNP, Phi_PPN = calc_Theta_Phi(T)
+    out.update(calc_Theta_Phi(T))
 
     # # These are only the temperature-sensitive modifications, 
     # # which are added to the theta_base table imported at the top of the file
@@ -571,14 +743,15 @@ def PitzerParams(T):
     # Phi_PPN[[0,2], [2,0], 1] = 0.197  # this overwrites the H-K-Cl parameter, and is present in original MyAMI
     # print('TYPO', Phi_PPN[0,2,1])
 
-    return {
-        'beta_0': beta_0,
-        'beta_1': beta_1,
-        'beta_2': beta_2,
-        'C_phi': C_phi,
-        'Theta_negative': Theta_negative,
-        'Theta_positive': Theta_positive,
-        'Phi_NNP': Phi_NNP,
-        'Phi_PPN': Phi_PPN,
-        'C1_HSO4': C1_HSO4,
-    }
+
+    return out
+    # return {
+    #     'beta_0': beta_0,
+    #     'beta_1': beta_1,
+    #     'beta_2': beta_2,
+    #     'C_phi': C_phi,
+    #     'Theta_negative': Theta_negative,
+    #     'Theta_positive': Theta_positive,
+    #     'Phi_NNP': Phi_NNP,
+    #     'Phi_PPN': Phi_PPN,
+    # }
