@@ -105,9 +105,11 @@ def EqA5A6(a, TK, Tsub, **kwargs):
 
 def EqA7(a, TK, **kwargs):
     PR, PJ, PLR = a[0:3]
+    a = 88893.4225
+    b = 8834524.63945833
     return (
-        PR + PJ * (8834524.63945833 - 88893.4225 * PLR) * (1 / TK - (1 / 298.15))
-        + PJ / 6 * (TK**2 - 88893.4225)
+        PR + PJ * (b - a * PLR) * (1 / TK - (1 / 298.15))
+        + PJ / 6 * (TK**2 - a)
     )
 
 # link tables to equations
