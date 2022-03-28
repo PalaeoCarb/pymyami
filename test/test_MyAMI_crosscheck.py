@@ -17,14 +17,17 @@ class MyAMI_V1_crosscheck(unittest.TestCase):
 
         Ks = 'K0', 'K1', 'K2', 'KW', 'KB', 'KspA', 'KspC', 'KS'
 
-        print('Comparing Ks to MyAMI_V1 (must be <0.4% different)')
+        print('Comparing Fcorr to MyAMI_V1 (must be <0.4% max difference)')
         for k in Ks:
             v1 = check[k]
             new = new_Fcorr[k]
 
-            maxpercentdiff = 100 * np.max(np.abs((v1 - new) / v1))
+            rdiff = (v1 - new) / v1  # relative difference
             
-            print(f'  {k}: {maxpercentdiff:.2f}%')
+            maxpercentdiff = 100 * np.max(np.abs(rdiff))
+            avgpercentdiff = 100 * np.mean(rdiff)
+            
+            print(f'  {k}: {maxpercentdiff:.2f}% max, {avgpercentdiff:.2f}% avg')
             self.assertLess(maxpercentdiff, 0.4, msg=f'Maximum difference in {k} correction factor too large: {maxpercentdiff}%')
 
 if __name__ == "__main__":
