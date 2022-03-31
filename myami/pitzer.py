@@ -1,6 +1,5 @@
 import numpy as np
-from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr
-from kgen import calc_K
+from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr, calc_KF, calc_KS
 
 # TODO: new file for user-facing functions.
 
@@ -370,8 +369,8 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
     # thus, conversion is required
     # * (gamma_anion[4] / gamma_anion[6] / gamma_cation[0])
     
-    K_HSO4_conditional = calc_K(k='KS', TempC=Tc, Sal=Sal)
-    K_HF_conditional = calc_K(k='KF', TempC=Tc, Sal=Sal)
+    K_HSO4_conditional = calc_KS(TK=T, Sal=Sal, Istr=Istr)
+    K_HF_conditional = calc_KF(TK=T, Sal=Sal)
     
     # print (gamma_anion[4], gamma_anion[6], gamma_cation[0])
     # alpha_H = 1 / (1+ m_anion[6] / K_HSO4_conditional + 0.0000683 / (7.7896E-4 * 1.1 / 0.3 / gamma_cation[0]))
