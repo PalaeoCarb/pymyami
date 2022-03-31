@@ -3,7 +3,7 @@ from argon2 import Parameters
 import numpy as np
 import json
 
-from myami.helpers import MyAMI_parameter_file
+from pymyami.helpers import MyAMI_parameter_file
 
 ##############################################################################
 # Pitzer Parameters

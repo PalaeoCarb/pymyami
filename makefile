@@ -7,7 +7,7 @@ build:
 	python setup.py sdist bdist_wheel
 
 upload:
-	twine upload dist/myami-$$(python setup.py --version)*
+	twine upload dist/pymyami-$$(python setup.py --version)*
 
 distribute:
 	make test

@@ -173,37 +173,37 @@ def calc_beta_C(TK):
     return params
 
 
-# testing
-TK = np.array([15, 25, 35]) + 298.15
+# # testing
+# TK = np.array([15, 25, 35]) + 298.15
 
-params = calc_beta_C(TK)
+# params = calc_beta_C(TK)
 
-test_params = PitzerParams(T=TK)
+# test_params = PitzerParams(T=TK)
 
-Prind = {v:k for k, v in Pind.items()}
-Nrind = {v:k for k, v in Nind.items()}
+# Prind = {v:k for k, v in Pind.items()}
+# Nrind = {v:k for k, v in Nind.items()}
 
-def compare_table(new, ref):
-    ind = np.abs(new - ref) > 1e-12
-    locs = np.argwhere(ind)
+# def compare_table(new, ref):
+#     ind = np.abs(new - ref) > 1e-12
+#     locs = np.argwhere(ind)
     
-    for loc in locs:
-        loc = tuple(loc)
-        iP = Prind[loc[0]]
-        iN = Nrind[loc[1]]
-        iTK = TK[loc[2]]
+#     for loc in locs:
+#         loc = tuple(loc)
+#         iP = Prind[loc[0]]
+#         iN = Nrind[loc[1]]
+#         iTK = TK[loc[2]]
 
-        print(f'  {iP}-{iN} at {iTK}: {ref[loc]} vs {new[loc]}')
+#         print(f'  {iP}-{iN} at {iTK}: {ref[loc]} vs {new[loc]}')
 
-    # print(ref[Tuple(loc)])
+#     # print(ref[Tuple(loc)])
 
-for p in ['beta_0', 'beta_1', 'beta_2', 'C_phi']:
-    diff = np.abs(params[p] - test_params[p])
-    if np.all(diff < 1e-10):
-        print(f'{p}:   OK')
-    else:
-        print(p)
-        compare_table(params[p], test_params[p])
+# for p in ['beta_0', 'beta_1', 'beta_2', 'C_phi']:
+#     diff = np.abs(params[p] - test_params[p])
+#     if np.all(diff < 1e-10):
+#         print(f'{p}:   OK')
+#     else:
+#         print(p)
+#         compare_table(params[p], test_params[p])
 
 
 # if __name__ == "__main__":

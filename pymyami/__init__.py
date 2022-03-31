@@ -1,4 +1,4 @@
 from .direct import calc_Fcorr 
 from .approx import approximate_Fcorr
 
-VERSION = "2.0-alpha"
+VERSION = "2.0a0"
