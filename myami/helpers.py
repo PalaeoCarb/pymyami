@@ -110,3 +110,28 @@ def standard_seawater(S=35.):
     ]) * S / 35.
 
     return cation_concs, anion_concs
+
+def calc_KS(TK=25., Sal=35., Istr=None):
+    lnTK = np.log(TK)
+    p = [141.328, -4276.1, -23.093, -13856, 324.57, -47.986, 35474, -771.54, 114.723, -2698, 1776]
+    
+    return np.exp(
+        p[0]
+        + p[1] / TK
+        + p[2] * lnTK
+        + np.sqrt(Istr) * (p[3] / TK + p[4] + p[5] * lnTK)
+        + Istr * (p[6] / TK + p[7] + p[8] * lnTK)
+        + p[9] / TK * Istr * np.sqrt(Istr)
+        + p[10] / TK * Istr ** 2
+        + np.log(1 - 0.001005 * Sal)
+    )
+    
+def calc_KF(TK=25., Sal=35.):
+    p = [874, -9.68, 0.111]  # from Best Practices guide.
+    # p = [1590.2, 12.641, 1.525]  # used in MyAMI_V1
+    
+    return np.exp(
+        p[0] / TK + 
+        p[1] + 
+        p[2] * Sal**0.5
+    )
