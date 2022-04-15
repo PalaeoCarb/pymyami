@@ -81,16 +81,18 @@ def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, 
 
     [gammaCO2, gammaCO2gas, gammaB] = gammaCO2_gammaB_fn(Tc, m_anion, m_cation)
 
-    gKspC = 1 / gammaT_Ca / gammaT_CO3
-    gKspA = 1 / gammaT_Ca / gammaT_CO3
-    gK1 = 1 / gammaT_Ht / gammaT_HCO3 * gammaCO2
-    gK2 = 1 / gammaT_Ht / gammaT_CO3 * gammaT_HCO3
-    gKW = 1 / gammaT_Ht / gammaT_OH
-    gKB = 1 / gammaT_BOH4 / gammaT_Ht * gammaB
-    gK0 = 1 / gammaCO2 * gammaCO2gas
-    gKHSO4 = 1 / gamma_anion[6] / gammaT_Ht * gamma_anion[4]
+    out = {
+    'gKspC': 1 / gammaT_Ca / gammaT_CO3,
+    'gKspA': 1 / gammaT_Ca / gammaT_CO3,
+    'gK1': 1 / gammaT_Ht / gammaT_HCO3 * gammaCO2,
+    'gK2': 1 / gammaT_Ht / gammaT_CO3 * gammaT_HCO3,
+    'gKW': 1 / gammaT_Ht / gammaT_OH,
+    'gKB': 1 / gammaT_BOH4 / gammaT_Ht * gammaB,
+    'gK0': 1 / gammaCO2 * gammaCO2gas,
+    'gKS': 1 / gamma_anion[6] / gammaT_Ht * gamma_anion[4],
+    }
 
-    return gKspC, gK1, gK2, gKW, gKB, gKspA, gK0, gKHSO4
+    return out
 
 
 def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
@@ -137,6 +139,9 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
         expand_dims(anion_charges, Tc)
         )   
 
+    ##########################################################################
+    # Code below largely lifted from MyAMI V1 (Hain et al., 2015), but
+    # vectorised for speed.
     ##########################################################################
 
     A_phi = (
