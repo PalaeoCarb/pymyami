@@ -112,6 +112,10 @@ def EqA7(a, TK, **kwargs):
         + PJ / 6 * (TK**2 - a)
     )
 
+def Eqn_A12(p, TK):
+    a, b, c, d, e = p
+    return a + b * TK + c * TK**2 + d / TK + e * np.log(TK)
+
 # link tables to equations
 EQ_TABLES = {
     'TabA1': EqA1,
@@ -361,6 +365,31 @@ def calc_Theta_Phi(TK):
         'Phi_PPN': Phi_PPN
         }
 
+def calc_lamda_zeta(TK):
+    cations = ['H', 'Na', 'K', 'Mg', 'Ca']
+    anions = ['Cl', 'SO4']
+    ions = cations + anions
+
+    TabA12 = TABLES['TabA12']
+    
+    lamdaCO2 = np.zeros((7, *TK.shape))
+    for i, ion in enumerate(ions):
+        p = TabA12.loc[(TabA12.Parameter == 'lambda_CO2') & (TabA12.i == ion), ['a', 'b', 'c', 'd', 'e']]
+        if p.size > 0:
+            lamdaCO2[i] = Eqn_A12(p.values[0], TK)
+            
+    zetaCO2 = np.zeros([2, 5, *TK.shape])
+
+    for i, cation in enumerate(cations):
+        for j, anion in enumerate(anions):
+            p = TabA12.loc[(TabA12.Parameter == 'zeta_CO2') & (TabA12.i == cation) & (TabA12.j == anion), ['a', 'b', 'c', 'd', 'e']]
+            if p.size > 0:
+                zetaCO2[j, i] = Eqn_A12(p.values[0], TK)
+
+    return {
+        'lamdaCO2': lamdaCO2,
+        'zetaCO2': zetaCO2
+    }
 
 def PitzerParams(TK):
     """
@@ -379,7 +408,9 @@ def PitzerParams(TK):
     if isinstance(TK, (float, int)):
         TK = np.asanyarray(TK)
     
-    out = calc_beta_C(TK)
+    out = {}
+    out.update(calc_beta_C(TK))
     out.update(calc_Theta_Phi(TK))
+    # out.update(calc_lambda_zeta(TK))
 
     return out
