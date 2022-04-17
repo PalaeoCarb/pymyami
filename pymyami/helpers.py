@@ -93,7 +93,6 @@ def standard_seawater(S=35.):
 
     sw = pd.read_csv(MyAMI_parameter_file('standard_seawater.csv'), index_col=0, comment='#')
     
-    print(sw)
     cation_concs = sw.loc[['H', 'Na', 'K', 'Mg', 'Ca', 'Sr'], :].values.T * S / 35
     anion_concs = sw.loc[['OH', 'Cl', 'BOH4', 'HCO3', 'HSO4', 'CO3', 'SO4'], :].values.T * S / 35
 
