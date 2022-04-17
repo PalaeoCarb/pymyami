@@ -1,52 +1,8 @@
 import numpy as np
 from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr, calc_KF, calc_KS
-from .params import TABLES, calc_lambda_zeta, Iind
+from .params import TABLES, calc_lambda_zeta, Iind, calc_seawater_ions
 
 # TODO: new file for user-facing functions.
-
-def calc_seawater_ions(Sal=35., Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None):
-    """
-    Returns modern seawater composition with given ions modified at specified salinity. 
-
-    All units are mol/kg.
-
-    NOTE: Assumes that the provided ionic concentrations are at Sal=35.
-
-    Returns
-    -------
-    tuple of arrays
-        Containing (cations, anions) in the order:
-        cations = [H, Na, K, Mg, Ca, Sr]
-        anions = [OH, Cl, B(OH)4, HCO3, HSO4, CO3, SO4] 
-
-    """
-    modified_cations = [None, Na, K, Mg, Ca, Sr]
-    modified_anions = [None, Cl, BOH4, HCO3, None, CO3, SO4]
-
-    m_cations, m_anions = standard_seawater()
-
-    m_cations = np.full(
-        (m_cations.size, *Sal.shape),
-        expand_dims(m_cations, Sal)
-        )
-
-    m_anions = np.full(
-        (m_anions.size, *Sal.shape),
-        expand_dims(m_anions, Sal)
-        )
-
-    for i, m in enumerate(modified_cations):
-        if m is not None:
-            m_cations[i] = m
-    
-    for i, m in enumerate(modified_anions):
-        if m is not None:
-            m_anions[i] = m
-
-    sal_factor = Sal / 35.
-
-    return m_cations * sal_factor, m_anions * sal_factor
-
 
 def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None,
                   beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=0):

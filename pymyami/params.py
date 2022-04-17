@@ -3,7 +3,54 @@ import re
 import numpy as np
 import pandas as pd
 from glob import glob
-from .helpers import MyAMI_parameter_file, expand_dims, match_dims, load_params
+from .helpers import MyAMI_parameter_file, expand_dims, match_dims, load_params, standard_seawater
+
+def calc_seawater_ions(Sal=35., Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None):
+    """
+    Returns modern seawater composition with given ions modified at specified salinity. 
+
+    All units are mol/kg.
+
+    NOTE: Assumes that the provided ionic concentrations are at Sal=35.
+
+    Returns
+    -------
+    tuple of arrays
+        Containing (cations, anions) in the order:
+        cations = [H, Na, K, Mg, Ca, Sr]
+        anions = [OH, Cl, B(OH)4, HCO3, HSO4, CO3, SO4] 
+
+    """
+    modified_cations = [None, Na, K, Mg, Ca, Sr]
+    modified_anions = [None, Cl, BOH4, HCO3, None, CO3, SO4]
+
+    m_cations, m_anions = standard_seawater()
+
+    m_cations = np.full(
+        (m_cations.size, *Sal.shape),
+        expand_dims(m_cations, Sal)
+        )
+
+    m_anions = np.full(
+        (m_anions.size, *Sal.shape),
+        expand_dims(m_anions, Sal)
+        )
+
+    for i, m in enumerate(modified_cations):
+        if m is not None:
+            m_cations[i] = m
+    
+    for i, m in enumerate(modified_anions):
+        if m is not None:
+            m_anions[i] = m
+
+    sal_factor = Sal / 35.
+
+    return m_cations * sal_factor, m_anions * sal_factor
+
+##########################################################################
+# Functions tp calculate pitzer calculation matrices from parameter tables
+##########################################################################
 
 # dictionaries of ions containing their matrix indices
 # positive ions H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
@@ -112,10 +159,6 @@ def EqA7(a, TK, **kwargs):
         + PJ / 6 * (TK**2 - a)
     )
 
-def Eqn_A12(p, TK):
-    a, b, c, d, e = p
-    return a + b * TK + c * TK**2 + d / TK + e * np.log(TK)
-
 # link tables to equations
 EQ_TABLES = {
     'TabA1': EqA1,
@@ -129,7 +172,9 @@ EQ_TABLES = {
     'TabSpecial': None  # special cases handled below
 }
 
-# Special Case Equations noted in table subscripts
+##########################################################################
+# Special Case Equations noted in table subscripts and/or MyAMI_V1
+##########################################################################
 def EqA2_MgSO4(a, TK, **kwargs):
     return (
         a[0] * ((TK / 2) + (88804) / (2 * TK) - 298)
@@ -206,9 +251,14 @@ def EqA10(a, TK):
     TKsub = TK - 298.15
     return a[0] + a[1] / TK + a[2] * 1e-4 * TK + a[3] * 1e-4 * TKsub + a[4] * 1e-6 * TKsub**2
 
-###############################
-# Matrix Construction Functions
-###############################
+# lambda and zeta function
+def Eqn_A12(p, TK):
+    a, b, c, d, e = p
+    return a + b * TK + c * TK**2 + d / TK + e * np.log(TK)
+
+##########################################################################
+# Matrix creation functions
+##########################################################################
 
 def calc_beta_C(TK):
     """
