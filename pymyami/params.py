@@ -365,18 +365,18 @@ def calc_Theta_Phi(TK):
         'Phi_PPN': Phi_PPN
         }
 
-def calc_lamda_zeta(TK):
+def calc_lambda_zeta(TK):
     cations = ['H', 'Na', 'K', 'Mg', 'Ca']
     anions = ['Cl', 'SO4']
     ions = cations + anions
 
     TabA12 = TABLES['TabA12']
     
-    lamdaCO2 = np.zeros((7, *TK.shape))
+    lambdaCO2 = np.zeros((7, *TK.shape))
     for i, ion in enumerate(ions):
         p = TabA12.loc[(TabA12.Parameter == 'lambda_CO2') & (TabA12.i == ion), ['a', 'b', 'c', 'd', 'e']]
         if p.size > 0:
-            lamdaCO2[i] = Eqn_A12(p.values[0], TK)
+            lambdaCO2[i] = Eqn_A12(p.values[0], TK)
             
     zetaCO2 = np.zeros([2, 5, *TK.shape])
 
@@ -387,7 +387,7 @@ def calc_lamda_zeta(TK):
                 zetaCO2[j, i] = Eqn_A12(p.values[0], TK)
 
     return {
-        'lamdaCO2': lamdaCO2,
+        'lambdaCO2': lambdaCO2,
         'zetaCO2': zetaCO2
     }
 

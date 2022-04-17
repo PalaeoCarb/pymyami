@@ -1,6 +1,6 @@
 import numpy as np
 from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr, calc_KF, calc_KS
-from .params import TABLES, calc_lamda_zeta
+from .params import TABLES, calc_lambda_zeta, Iind
 
 # TODO: new file for user-facing functions.
 
@@ -439,51 +439,49 @@ def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
     T = Tc + 273.15
     lnT = np.log(T)
 
+    cations = ['H', 'Na', 'K', 'Mg', 'Ca']
+    anions = ['Cl', 'SO4']
+    ions = cations + anions
+    
     m_ion = np.array(
-        [m_cat[0], m_cat[1], m_cat[2], m_cat[3], m_cat[4], m_an[1], m_an[6]]
+        [m_cat[Iind[c]] for c in cations] + [m_an[Iind[a]] for a in anions]
     )
+        
+    lambda_zeta = calc_lambda_zeta(T)
     
-    lamda_zeta = calc_lamda_zeta(T)
+    lambdaCO2 = lambda_zeta['lambdaCO2']
+    zetaCO2 = lambda_zeta['zetaCO2']
     
-    lamdaCO2 = lamda_zeta['lamdaCO2']
-    zetaCO2 = lamda_zeta['zetaCO2']
-    
-    # original calculation:
-    # ln_gammaCO2 = 0
-    # for ion in range(0, 7):
-    #     ln_gammaCO2 = ln_gammaCO2 + m_ion[ion] * 2 * lamdaCO2[ion]
-    
-    # vectorised calculation:
-    ln_gammaCO2 = (m_ion * 2 * lamdaCO2).sum(0)
+    ln_gammaCO2 = (m_ion * 2 * lambdaCO2).sum(0)
+    gammaCO2 = np.exp(ln_gammaCO2)  # as according to He and Morse 1993
 
+    # zetaCO2 not used?
+
+    # original calculation for zetaCO2
     # for cat in range(0, 5):
     # ln_gammaCO2 = ln_gammaCO2 + m_ion[5] * m_ion[cat] * zetaCO2[0, cat] + m_ion[6] * m_ion[cat] * zetaCO2[1, cat]
 
-    gammaCO2 = np.exp(ln_gammaCO2)  # as according to He and Morse 1993
-    # gammaCO2 = np.power(10, ln_gammaCO2) # pK1 is "correct if log-base 10 is assumed
 
     gammaCO2gas = np.exp(
-        1
-        / (
-            8.314462175
-            * T
-            * (0.10476 - 61.0102 / T - 660000 / T / T / T - 2.47e27 / np.power(T, 12))
+        1 /
+        (8.314462175 * T *
+            (0.10476 - 61.0102 / T - 660000 / T / T / T - 2.47e27 / np.power(T, 12))
         )
-    )
+    )  # unclear where this comes from...
 
     ##########################
     # CALCULATION OF gammaB
-    lamdaB = np.array([0, -0.097, -0.14, 0, 0, 0.091, 0.018])  # Felmy and Wear 1986
-    # lamdaB = np.array([0.109, 0.028, -0.026, 0.191, 0.165, 0, -0.205]) #Chanson and Millero 2006
+    lambdaB = np.array([0, -0.097, -0.14, 0, 0, 0.091, 0.018])  # Felmy and Wear 1986
+    # lambdaB = np.array([0.109, 0.028, -0.026, 0.191, 0.165, 0, -0.205]) #Chanson and Millero 2006
     
     # original calculation:
 
     # ln_gammaB = m_ion[1] * m_ion[6] * 0.046  # tripple ion interaction Na-SO4
     # for ion in range(0, 7):
-    #     ln_gammaB = ln_gammaB + m_ion[ion] * 2 * lamdaB[ion]
+    #     ln_gammaB = ln_gammaB + m_ion[ion] * 2 * lambdaB[ion]
     
     # vectorised calculation:
-    ln_gammaB = m_ion[1] * m_ion[6] * 0.046 + (m_ion * 2 * match_dims(lamdaB, m_ion)).sum(0)
+    ln_gammaB = m_ion[1] * m_ion[6] * 0.046 + (m_ion * 2 * match_dims(lambdaB, m_ion)).sum(0)
     
     gammaB = np.exp(ln_gammaB)  # as according to Felmy and Wear 1986
     # print gammaB
