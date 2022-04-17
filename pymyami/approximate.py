@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
 from scipy.linalg import lstsq
 from datetime import datetime
+from warnings import warn
 
 from .helpers import shape_matcher, load_params, MyAMI_parameter_file
 from .calculate import calc_Fcorr
@@ -32,11 +33,12 @@ def approximate_Fcorr(TempC=25, Sal=35, Mg=0.0528171, Ca=0.0102821):
         Containing Fcorr factors for the specified inputs
     """
 
-    print(
-        'WARNING: using approximate MyAMI K correction factors\n' +
-        'instead of calculated ones. These are only accurate to\n' +
-        "within ~0.5%. Please don't use them for anything critical."
+    warning_message = (
+        'WARNING: using approximate MyAMI K correction factors' +
+        'instead of calculated ones. These are only accurate to' +
+        "within ~0.25%. Please don't use them for anything critical."
         )
+    warn(warning_message, UserWarning)
     
     TempC, Sal, Mg, Ca = shape_matcher(TempC, Sal, Mg, Ca)
 
