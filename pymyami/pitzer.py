@@ -410,7 +410,7 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
     lambda_zeta = calc_lambda_zeta(TK)
     
     lambdaCO2 = lambda_zeta['lambdaCO2']
-    zetaCO2 = lambda_zeta['zetaCO2']
+    zetaCO2 = lambda_zeta['zetaCO2']  # not used in Hain's MyAMI?
     lambdaB = lambda_zeta['lambdaB']
     zetaB = lambda_zeta['zetaB']
     
