@@ -4,13 +4,35 @@ from .params import TABLES, calc_lambda_zeta, Iind, calc_seawater_ions
 
 # TODO: new file for user-facing functions.
 
-def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None,
-                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=0):
+def calculate_gKs(TC, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None,
+                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None):
     """
     Calculate Ks at given conditions using MyAMI model.
+
+    Parameters
+    ----------
+    TC : array-like
+        Temperature in Celcius
+    Sal : array-like
+        Salinity
+    Na, K, Ca, Mg, Sr, Cl, BOH4, HCO3, CO3, SO4 : array-like, optional
+        Average concentration of ions in seawater in mol kg-1, by default None
+    beta_0, beta_1, beta_2, C_phi : numpy.NDarray, optional
+        Matrices of ion interaction coefficients from tables A1-A9 of
+        Millero and Pierrot (1998; doi:10.1023/A:1009656023546) provided
+        by the params.PitzerParams function.
+    Theta_negative, Theta_positive, Phi_NNP, Phi_PPN : numpy.NDarray, optional
+        Matrices of ion interaction coefficients from tables A10 and A11 of
+        Millero and Pierrot (1998; doi:10.1023/A:1009656023546) provided
+        by the params.PitzerParams function.
+
+    Returns
+    -------
+    dict of array-like
+        Containing {gKspC, gKspA, gK1, gK2, gKW, gKB, gK0, gKS}
     """
 
-    TK = Tc + 273.15
+    TK = TC + 273.15
     Istr = calc_Istr(Sal)
     m_cation, m_anion = calc_seawater_ions(Sal, Na=Na, K=K, Mg=Mg, Ca=Ca, Sr=Sr, Cl=Cl, BOH4=BOH4, HCO3=HCO3, CO3=CO3, SO4=SO4)
 
@@ -18,7 +40,7 @@ def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, 
         TK=TK, Sal=Sal, Istr=Istr, m_cation=m_cation, m_anion=m_anion, 
         beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, C_phi=C_phi,
         Theta_negative=Theta_negative, Theta_positive=Theta_positive,
-        Phi_NNP=Phi_NNP, Phi_PPN=Phi_PPN, C1_HSO4=C1_HSO4)
+        Phi_NNP=Phi_NNP, Phi_PPN=Phi_PPN)
 
     gammaT_OH = gammas['anion'][0] * alphas['OH']
     gammaT_BOH4 = gammas['anion'][2]
@@ -45,7 +67,7 @@ def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, 
 
 
 def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
-                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=0):
+                  beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None):
     """Calculate Gammas and Alphas for K calculations.
 
     Parameters
@@ -237,6 +259,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     BMX[cat, an] = beta_0[cat, an] + beta_1[cat, an] * gClegg
     BMX_apostroph[cat, an] = beta_1[cat, an] / Istr * (np.exp(-xClegg) - gClegg)
 
+    C1_HSO4 = 0  # not sure what this is, but was in original MyAMI...
     CMX[cat, an] = (
         C_phi[cat, an] + 4 * C1_HSO4 * 
         (6 - (6 + 2.5 * sqrtI * (6 + 3 * 2.5 * sqrtI + 2.5 * sqrtI * 2.5 * sqrtI)) *
@@ -374,7 +397,7 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
 
     Parameters
     ----------
-    Tc : array-like
+    TC : array-like
         Temperature in Kelvin, used to determine array shapes
     m_an : dict
         Containing cation concentrations in mol/kgsw 
