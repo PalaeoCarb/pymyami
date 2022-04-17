@@ -3,7 +3,7 @@ User-facing function for calculating K correction factors using MyAMI
 """
 
 from .helpers import shape_matcher
-from .pitzer import calculate_gKs
+from .pitzer import calc_gKs
 from .params import PitzerParams
 
 
@@ -38,9 +38,9 @@ def calc_Fcorr(Sal=35., TempC=25., Na=None, K=None, Mg=None, Ca=None, Sr=None, C
     pitzer_params = PitzerParams(TempC + 273.15)
 
     # Calculate gK's for modern (mod) and experimental (x) seawater composition
-    mod = calculate_gKs(TempC, Sal, **pitzer_params)
+    mod = calc_gKs(TempC, Sal, **pitzer_params)
     
-    X = calculate_gKs(TempC, Sal, 
+    X = calc_gKs(TempC, Sal, 
                       Na=Na, K=K, Mg=Mg, Ca=Ca, Sr=Sr, Cl=Cl, 
                       BOH4=BOH4, HCO3=HCO3, CO3=CO3, SO4=SO4, 
                       **pitzer_params)

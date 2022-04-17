@@ -4,7 +4,7 @@ from .params import TABLES, calc_lambda_zeta, Iind, calc_seawater_ions
 
 # TODO: new file for user-facing functions.
 
-def calculate_gKs(TC, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None,
+def calc_gKs(TC, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None,
                   beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None):
     """
     Calculate Ks at given conditions using MyAMI model.
