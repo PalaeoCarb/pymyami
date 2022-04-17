@@ -418,7 +418,7 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
     m_ion = np.concatenate([m_cation, m_anion])
     
     m_zeta = (np.expand_dims(m_anion,1) * np.expand_dims(m_cation,0))  # matrix for zeta calculation
-    
+        
     lambda_zeta = calc_lambda_zeta(TK)
     
     lambdaCO2 = lambda_zeta['lambdaCO2']
@@ -442,9 +442,9 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
 
     ##########################
     # CALCULATION OF gammaB
-    
-    ln_gammaB = (m_ion * 2 * lambdaB.reshape(-1,1)).sum(0)  # lambdaB
-    ln_gammaB += (m_zeta * np.expand_dims(zetaB, -1)).sum()  # zetaB
+        
+    ln_gammaB = (m_ion * 2 * match_dims(lambdaB, m_ion)).sum(0)  # lambdaB
+    ln_gammaB += (m_zeta * match_dims(zetaB, m_zeta)).sum()  # zetaB
     
     gammaB = np.exp(ln_gammaB)  # as according to Felmy and Wear 1986
     # print gammaB
