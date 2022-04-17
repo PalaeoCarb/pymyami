@@ -10,56 +10,48 @@ def calculate_gKs(Tc, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, 
     Calculate Ks at given conditions using MyAMI model.
     """
 
+    TK = Tc + 273.15
+    Istr = calc_Istr(Sal)
     m_cation, m_anion = calc_seawater_ions(Sal, Na=Na, K=K, Mg=Mg, Ca=Ca, Sr=Sr, Cl=Cl, BOH4=BOH4, HCO3=HCO3, CO3=CO3, SO4=SO4)
 
-    Istr = calc_Istr(Sal)
-
-    [
-        gamma_cation,
-        gamma_anion,
-        alpha_Hsws,
-        alpha_Ht,
-        alpha_OH,
-        alpha_CO3,
-    ] = CalculateGammaAndAlphas(
-        Tc, Sal, Istr, m_cation, m_anion, 
+    gammas, alphas = calc_gamma_alpha(
+        TK=TK, Sal=Sal, Istr=Istr, m_cation=m_cation, m_anion=m_anion, 
         beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, C_phi=C_phi,
         Theta_negative=Theta_negative, Theta_positive=Theta_positive,
         Phi_NNP=Phi_NNP, Phi_PPN=Phi_PPN, C1_HSO4=C1_HSO4)
 
-    gammaT_OH = gamma_anion[0] * alpha_OH
-    gammaT_BOH4 = gamma_anion[2]
-    gammaT_HCO3 = gamma_anion[3]
-    gammaT_CO3 = gamma_anion[5] * alpha_CO3
+    gammaT_OH = gammas['anion'][0] * alphas['OH']
+    gammaT_BOH4 = gammas['anion'][2]
+    gammaT_HCO3 = gammas['anion'][3]
+    gammaT_CO3 = gammas['anion'][5] * alphas['CO3']
+    
+    gammaT_Ht = gammas['cation'][0] * alphas['Ht']
+    gammaT_Ca = gammas['cation'][4]
 
-    # gammaT_Hsws = gamma_cation[0] * alpha_Hsws
-    gammaT_Ht = gamma_cation[0] * alpha_Ht
-    gammaT_Ca = gamma_cation[4]
-
-    [gammaCO2, gammaCO2gas, gammaB] = gammaCO2_gammaB_fn(Tc, m_anion, m_cation)
+    gammaCO2_gammaB = calc_gammaCO2_gammaB(TK, m_anion, m_cation)
 
     out = {
     'gKspC': 1 / gammaT_Ca / gammaT_CO3,
     'gKspA': 1 / gammaT_Ca / gammaT_CO3,
-    'gK1': 1 / gammaT_Ht / gammaT_HCO3 * gammaCO2,
+    'gK1': 1 / gammaT_Ht / gammaT_HCO3 * gammaCO2_gammaB['gammaCO2'],
     'gK2': 1 / gammaT_Ht / gammaT_CO3 * gammaT_HCO3,
     'gKW': 1 / gammaT_Ht / gammaT_OH,
-    'gKB': 1 / gammaT_BOH4 / gammaT_Ht * gammaB,
-    'gK0': 1 / gammaCO2 * gammaCO2gas,
-    'gKS': 1 / gamma_anion[6] / gammaT_Ht * gamma_anion[4],
+    'gKB': 1 / gammaT_BOH4 / gammaT_Ht * gammaCO2_gammaB['gammaB'],
+    'gK0': 1 / gammaCO2_gammaB['gammaCO2'] * gammaCO2_gammaB['gammaCO2gas'],
+    'gKS': 1 / gammas['anion'][6] / gammaT_Ht * gammas['anion'][4],
     }
 
     return out
 
 
-def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
+def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
                   beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None, C1_HSO4=0):
     """Calculate Gammas and Alphas for K calculations.
 
     Parameters
     ----------
-    Tc : array-like
-        Temperature in Celcius
+    TK : array-like
+        Temperature in Kelvin
     S : array-like
         Salinity in PSU
     Istr : array-like
@@ -73,13 +65,13 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
 
     Returns
     -------
-    list of arrays
-        [gamma_cation, gamma_anion, alpha_Hsws, alpha_Ht, alpha_OH, alpha_CO3]
+    tuple of dicts
+        (gammas: {cations, anions},
+         alphas: {Hsws, Ht, OH, CO3})
     """
     # TODO: Derive this from paper tables?
     
     # Testbed case T=25C, I=0.7, seawatercomposition
-    T = Tc + 273.15
     sqrtI = np.sqrt(Istr)
     
     # make tables of ion charges used in later calculations
@@ -87,15 +79,15 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
     # cation order: [H, Na, K, Mg, Ca, Sr]
     cation_charges = np.array([1, 1, 1, 2, 2, 2])
     Z_cation = np.full(
-        (cation_charges.size, *Tc.shape),
-        expand_dims(cation_charges, Tc)
+        (cation_charges.size, *TK.shape),
+        expand_dims(cation_charges, TK)
         )
 
     # anion order: [OH, Cl, B(OH)4, HCO3, HSO4, CO3, SO4]
     anion_charges = np.array([-1, -1, -1, -1, -1, -2, -2])
     Z_anion = np.full(
-        (anion_charges.size, *Tc.shape),
-        expand_dims(anion_charges, Tc)
+        (anion_charges.size, *TK.shape),
+        expand_dims(anion_charges, TK)
         )   
 
     ##########################################################################
@@ -105,12 +97,12 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
 
     A_phi = (
         3.36901532e-01
-        - 6.32100430e-04 * T
-        + 9.14252359 / T
-        - 1.35143986e-02 * np.log(T)
-        + 2.26089488e-03 / (T - 263)
-        + 1.92118597e-6 * T * T
-        + 4.52586464e01 / (680 - T)
+        - 6.32100430e-04 * TK
+        + 9.14252359 / TK
+        - 1.35143986e-02 * np.log(TK)
+        + 2.26089488e-03 / (TK - 263)
+        + 1.92118597e-6 * TK * TK
+        + 4.52586464e01 / (680 - TK)
     )  # note correction of last parameter, E + 1 instead of E-1
     # A_phi = 8.66836498e1 + 8.48795942e-2 * T - 8.88785150e-5 * T * T +
     # 4.88096393e-8 * T * T * T -1.32731477e3 / T - 1.76460172e1 * np.log(T)
@@ -234,7 +226,7 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
     cat, an = 0, 6
     # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al.,
     # 1994 --- Millero and Pierrot are completly off for this ion pair
-    xClegg = (2 - 1842.843 * (1 / T - 1 / 298.15)) * sqrtI
+    xClegg = (2 - 1842.843 * (1 / TK - 1 / 298.15)) * sqrtI
     # xClegg = (2) * sqrtI
     gClegg = 2 * (1 - (1 + xClegg) * np.exp(-xClegg)) / (xClegg * xClegg)
     # alpha = (2 - 1842.843 * (1 / T - 1 / 298.15)) see Table 6 in Clegg et al
@@ -332,8 +324,8 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
     # thus, conversion is required
     # * (gamma_anion[4] / gamma_anion[6] / gamma_cation[0])
     
-    K_HSO4_conditional = calc_KS(TK=T, Sal=Sal, Istr=Istr)
-    K_HF_conditional = calc_KF(TK=T, Sal=Sal)
+    K_HSO4_conditional = calc_KS(TK=TK, Sal=Sal, Istr=Istr)
+    K_HF_conditional = calc_KF(TK=TK, Sal=Sal)
     
     # print (gamma_anion[4], gamma_anion[6], gamma_cation[0])
     # alpha_H = 1 / (1+ m_anion[6] / K_HSO4_conditional + 0.0000683 / (7.7896E-4 * 1.1 / 0.3 / gamma_cation[0]))
@@ -362,20 +354,20 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
     ln_gamma_MgOH = ln_gamma_MgOH + m_cation[3] * m_anion[1] * b0b1CPhi_MgOH[3]
     gamma_MgOH = np.exp(ln_gamma_MgOH)
 
-    K_MgOH = np.power(10, -(3.87 - 501.6 / T)) / (
+    K_MgOH = np.power(10, -(3.87 - 501.6 / TK)) / (
         gamma_cation[3] * gamma_anion[0] / gamma_MgOH
     )
-    K_MgCO3 = np.power(10, -(1.028 + 0.0066154 * T)) / (
+    K_MgCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (
         gamma_cation[3] * gamma_anion[5] / gamma_MgCO3
     )
-    K_CaCO3 = np.power(10, -(1.178 + 0.0066154 * T)) / (
+    K_CaCO3 = np.power(10, -(1.178 + 0.0066154 * TK)) / (
         gamma_cation[4] * gamma_anion[5] / gamma_CaCO3
     )
     # K_CaCO3 = np.power(10, (-1228.732 - 0.299444 * T + 35512.75 / T +485.818 * np.log10(T))) / (gamma_cation[4] * gamma_anion[5] / gamma_CaCO3) # Plummer and Busenberg82
     # K_MgCO3 = np.power(10, (-1228.732 +(0.15) - 0.299444 * T + 35512.75 / T
     # +485.818 * np.log10(T))) / (gamma_cation[4] * gamma_anion[5] /
     # gamma_CaCO3)# Plummer and Busenberg82
-    K_SrCO3 = np.power(10, -(1.028 + 0.0066154 * T)) / (
+    K_SrCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (
         gamma_cation[5] * gamma_anion[5] / gamma_SrCO3
     )
 
@@ -384,12 +376,27 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
         1 + (m_cation[3] / K_MgCO3) + (m_cation[4] / K_CaCO3) + (m_cation[5] / K_SrCO3)
     )
 
-    return gamma_cation, gamma_anion, alpha_Hsws, alpha_Ht, alpha_OH, alpha_CO3
+    return ({'cation': gamma_cation, 'anion': gamma_anion}, 
+            {'Hsws': alpha_Hsws, 'Ht': alpha_Ht, 'OH': alpha_OH, 'CO3': alpha_CO3})
 
-def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
-    # TODO: derive this from paper tables
-    T = Tc + 273.15
-    lnT = np.log(T)
+def calc_gammaCO2_gammaB(TK, m_an, m_cat):
+    """
+    Calculate gammaCO2 and gammaB
+
+    Parameters
+    ----------
+    Tc : array-like
+        Temperature in Kelvin, used to determine array shapes
+    m_an : dict
+        Containing cation concentrations in mol/kgsw 
+    m_cat : dict
+        Containing anion concentrations in mol/kgsw
+
+    Returns
+    -------
+    dict
+        Containing {gammaCO2, gammaCO2gas, gammaB}
+    """
 
     cations = ['H', 'Na', 'K', 'Mg', 'Ca']
     anions = ['Cl', 'SO4']
@@ -400,7 +407,7 @@ def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
     
     m_zeta = (np.expand_dims(m_anion,1) * np.expand_dims(m_cation,0))  # matrix for zeta calculation
     
-    lambda_zeta = calc_lambda_zeta(T)
+    lambda_zeta = calc_lambda_zeta(TK)
     
     lambdaCO2 = lambda_zeta['lambdaCO2']
     zetaCO2 = lambda_zeta['zetaCO2']
@@ -416,11 +423,10 @@ def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
 
 
     gammaCO2gas = np.exp(
-        1 /
-        (8.314462175 * T *
-            (0.10476 - 61.0102 / T - 660000 / T / T / T - 2.47e27 / np.power(T, 12))
+        1 / (8.314462175 * TK *
+            (0.10476 - 61.0102 / TK - 660000 / TK / TK / TK - 2.47e27 / np.power(TK, 12))
         )
-    )  # unclear where this comes from...
+    )  # unclear where this comes from.
 
     ##########################
     # CALCULATION OF gammaB
@@ -431,4 +437,8 @@ def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
     gammaB = np.exp(ln_gammaB)  # as according to Felmy and Wear 1986
     # print gammaB
 
-    return gammaCO2, gammaCO2gas, gammaB
+    return {
+        'gammaCO2': gammaCO2, 
+        'gammaCO2gas': gammaCO2gas, 
+        'gammaB': gammaB
+        }
