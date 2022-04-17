@@ -430,10 +430,6 @@ def CalculateGammaAndAlphas(Tc, Sal, Istr, m_cation, m_anion,
 
     return gamma_cation, gamma_anion, alpha_Hsws, alpha_Ht, alpha_OH, alpha_CO3
 
-def Eqn_A12(p, TK):
-    a, b, c, d, e = p
-    return a + b * TK + c * TK**2 + d / TK + e * np.log(TK)
-
 def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
     # TODO: derive this from paper tables
     T = Tc + 273.15
@@ -441,25 +437,26 @@ def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
 
     cations = ['H', 'Na', 'K', 'Mg', 'Ca']
     anions = ['Cl', 'SO4']
-    ions = cations + anions
     
-    m_ion = np.array(
-        [m_cat[Iind[c]] for c in cations] + [m_an[Iind[a]] for a in anions]
-    )
-        
+    m_cation = np.array([m_cat[Iind[c]] for c in cations])
+    m_anion = np.array([m_an[Iind[a]] for a in anions])
+    m_ion = np.concatenate([m_cation, m_anion])
+    
+    m_zeta = (np.expand_dims(m_anion,1) * np.expand_dims(m_cation,0))  # matrix for zeta calculation
+    
     lambda_zeta = calc_lambda_zeta(T)
     
     lambdaCO2 = lambda_zeta['lambdaCO2']
     zetaCO2 = lambda_zeta['zetaCO2']
+    lambdaB = lambda_zeta['lambdaB']
+    zetaB = lambda_zeta['zetaB']
     
-    ln_gammaCO2 = (m_ion * 2 * lambdaCO2).sum(0)
+    ##########################
+    # CALCULATION OF gammaCO2
+
+    ln_gammaCO2 = (m_ion * 2 * lambdaCO2).sum(0)  # lambdaCO2
+    # ln_gammaCO2 += (m_zeta * zetaCO2).sum((0,1))  # zetaCO2 (not used in original MyAMI, introduces small differences...)
     gammaCO2 = np.exp(ln_gammaCO2)  # as according to He and Morse 1993
-
-    # zetaCO2 not used?
-
-    # original calculation for zetaCO2
-    # for cat in range(0, 5):
-    # ln_gammaCO2 = ln_gammaCO2 + m_ion[5] * m_ion[cat] * zetaCO2[0, cat] + m_ion[6] * m_ion[cat] * zetaCO2[1, cat]
 
 
     gammaCO2gas = np.exp(
@@ -471,17 +468,9 @@ def gammaCO2_gammaB_fn(Tc, m_an, m_cat):
 
     ##########################
     # CALCULATION OF gammaB
-    lambdaB = np.array([0, -0.097, -0.14, 0, 0, 0.091, 0.018])  # Felmy and Wear 1986
-    # lambdaB = np.array([0.109, 0.028, -0.026, 0.191, 0.165, 0, -0.205]) #Chanson and Millero 2006
     
-    # original calculation:
-
-    # ln_gammaB = m_ion[1] * m_ion[6] * 0.046  # tripple ion interaction Na-SO4
-    # for ion in range(0, 7):
-    #     ln_gammaB = ln_gammaB + m_ion[ion] * 2 * lambdaB[ion]
-    
-    # vectorised calculation:
-    ln_gammaB = m_ion[1] * m_ion[6] * 0.046 + (m_ion * 2 * match_dims(lambdaB, m_ion)).sum(0)
+    ln_gammaB = (m_ion * 2 * lambdaB.reshape(-1,1)).sum(0)  # lambdaB
+    ln_gammaB += (m_zeta * np.expand_dims(zetaB, -1)).sum()  # zetaB
     
     gammaB = np.exp(ln_gammaB)  # as according to Felmy and Wear 1986
     # print gammaB
