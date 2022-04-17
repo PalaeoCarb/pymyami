@@ -1,6 +1,7 @@
+<div align="right">
+<a href="https://github.com/PalaeoCarb/MyAMI/actions/workflows/test-myami_v1.yml"><img src="https://github.com/PalaeoCarb/MyAMI/actions/workflows/test-myami_v1.yml/badge.svg" height=18></a>
+<a href="https://badge.fury.io/py/pymyami"><img src="https://badge.fury.io/py/pymyami.svg" height=18></a>
+</div>
+
 # MyAMI
-MyAMI Specific Ion Interaction Model for calculating ion activities in seawater.
-
-[![Compare Fcorr values to MyAMI_V1](https://github.com/PalaeoCarb/MyAMI/actions/workflows/test-myami_v1.yml/badge.svg)](https://github.com/PalaeoCarb/MyAMI/actions/workflows/test-myami_v1.yml)
-
-[![PyPI version](https://badge.fury.io/py/pymyami.svg)](https://badge.fury.io/py/pymyami)
+MyAMI Specific Ion Interaction Model for correcting stoichiometric equilibrium constants (*Ks*) for variations in seawater composition.
