@@ -225,7 +225,7 @@ def calc_beta_C(TK):
     
     Returns
     -------
-    dict
+    dict of array-like
         Containing {beta_0, beta_1, beta_2, C_phi}
     """
     TKinv = 1. / TK
@@ -276,8 +276,8 @@ def calc_Theta_Phi(TK):
     
     Returns
     -------
-    tuple of array-like
-        Containing (Theta_negative, Theta_positive, Phi_NNP, Phi_PPN)
+    dict of array-like
+        Containing {Theta_negative, Theta_positive, Phi_NNP, Phi_PPN}
     """
 
     # create empty arrays
@@ -366,6 +366,19 @@ def calc_Theta_Phi(TK):
         }
 
 def calc_lambda_zeta(TK):
+    """
+    Return lambda and zeta matrices from Table A12 of Millero and Pierrot (1998).
+
+    Parameters
+    ----------
+    TK : arra-like
+        Temperature in Kelvin
+
+    Returns
+    -------
+    dict
+        Containing {lambdaCO2, zetaCO2, lambdaB, zetaB}
+    """
     cations = ['H', 'Na', 'K', 'Mg', 'Ca']
     anions = ['Cl', 'SO4']
     ions = cations + anions
@@ -386,9 +399,24 @@ def calc_lambda_zeta(TK):
             if p.size > 0:
                 zetaCO2[j, i] = Eqn_A12(p.values[0], TK)
 
+    lambdaB = np.zeros((7))
+    for i, ion in enumerate(ions):
+        p = TabA12.loc[(TabA12.Parameter == 'lambda_BOH3') & (TabA12.i == ion), ['a']]
+        if p.size > 0:
+            lambdaB[i] = p.values
+            
+    zetaB = np.zeros([2, 5])
+    for i, cation in enumerate(cations):
+        for j, anion in enumerate(anions):
+            p = TabA12.loc[(TabA12.Parameter == 'zeta_BOH3') & (TabA12.i == cation) & (TabA12.j == anion), ['a']]
+            if p.size > 0:
+                zetaB[j, i] = p.values
+    
     return {
         'lambdaCO2': lambdaCO2,
-        'zetaCO2': zetaCO2
+        'zetaCO2': zetaCO2,
+        'lambdaB': lambdaB,
+        'zetaB': zetaB
     }
 
 def PitzerParams(TK):
