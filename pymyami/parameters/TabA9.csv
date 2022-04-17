@@ -1,0 +1,13 @@
+# Table A9 of Millero and Pierrot (1998) doi:10.1023/A:1009656023546
+# Coefficients for H-Cl and H-SO4 ion pairs.
+# H-Cl equation: P = a + b * T + c / T
+# H-SO4 equation: P = a + (T - 328.15) * 1e-3 * (b + (T - 328.15) * ((c / 2) + (T - 328.15) * (d / 6)))
+Parameter,Salt,a,b,c,d,Range,Reference
+beta_0,H-Cl,1.2859,-0.0021197,-142.58770,,0-50,(a)
+beta_1,H-Cl,-4.4474,8.425698E-3,665.7882,,,first parameter corrected to negative as in original reference.
+C_phi,H-Cl,-0.305156,5.16E-4,45.521540,,,
+# beta_0,H-SO4,0.065,0.134945,0.022374,7.2E-5,0-250,(b)
+# beta_1,H-SO4,-15.009,-2.405945,0.335839,-0.004379,,
+# C_0,H-SO4,0.008073,-0.113106,-0.003553,3.57E-5,,
+# C_1,H-SO4,-0.050799,3.472545,-0.311463,0.004037,,
+

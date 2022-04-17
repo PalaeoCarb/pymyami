@@ -1,0 +1,19 @@
+# Table A6 of Millero and Pierrot (1998) doi:10.1023/A:1009656023546
+# SrX coefficients for P = a + b * (T - 298.15) + c * (T - 298.15)**2
+Parameter,Salt,a,b,c,Range,Reference
+beta_0,SrBr2,0.33113,3.2775E-4,,10-40,(a)(b)
+beta_1,SrBr2,1.7115,6.5325E-3,,,
+C_phi,SrBr2,0.00123,,,,
+beta_0,Sr(NO3)2,0.134625,1.77E-4,,10-40,(a)(b)
+beta_1,Sr(NO3)2,1.38,0.0124725,,,
+C_phi,Sr(NO3)2,-0.01993,,,,
+beta_0,Sr(ClO4)2,0.4269,1.524E-4,,10-40,(a)(b)
+beta_1,Sr(ClO4)2,1.56675,7.19E-4,,,
+C_phi,Sr(ClO4)2,-0.01311,-5.86E-5,,,
+beta_0,Sr(HSO3)2,0.4269,1.524E-4,,10-40,(a)(b)
+beta_1,Sr(HSO3)2,1.56675,7.19E-4,,,
+C_phi,Sr(HSO3)2,-0.01311,-5.86E-5,,,
+beta_0,Sr(B(OH)4)2,-0.4462,5.393E-3,,5-55,Equaled to Ca
+beta_1,Sr(B(OH)4)2,-0.868,-0.0182,,,
+beta_2,Sr(B(OH)4)2,-15.88,0,-2.858E-03,,
+C_phi,Sr(B(OH)4)2,0,,,,

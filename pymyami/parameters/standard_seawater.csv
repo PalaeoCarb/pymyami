@@ -1,0 +1,15 @@
+# Standard seawater compositiong from Millero et al., 2008; Dickson OA-guide
+ion,molarity
+H,0.00000001
+Na,0.4689674
+K,0.0102077
+Mg,0.0528171
+Ca,0.0102821
+Sr,0.0000907
+OH,0.0000010
+Cl,0.5458696
+BOH4,0.0001008
+HCO3,0.0017177
+HSO4,0.0282352e-6
+CO3,0.0002390
+SO4,0.0282352

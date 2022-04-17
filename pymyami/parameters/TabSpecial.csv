@@ -1,0 +1,9 @@
+# Table of modifications to Millero and Pierrot (1998) used by Hain et al (2015)
+# Equation given in text form in each column
+Parameter,Salt,p0,p1,p2,p3,p4,p5,p6,Reference,Equation
+beta_0,Na2SO4,8.16920027e+01,3.01104957e-02,-2.32193726e+03,-1.43780207e+01,-6.66496111e-01,-1.03923656e-05,0.00000000e+00,Moller 1988,p0 + p1 * TK + p2 / TK + p3 * lnTK + p4 / (TK - 263) + p5 * TK**2 + p6 / (680. - TK)
+beta_1,Na2SO4,1.00463018e+03,5.77453682e-01,-2.18434467e+04,-1.89110656e+02,-2.03550549e-01,-3.23949532e-04,1.46772243e+03,Moller 1988,p0 + p1 * TK + p2 / TK + p3 * lnTK + p4 / (TK - 263) + p5 * TK**2 + p6 / (680. - TK)
+C_phi,Na2SO4,-8.07816886e+01,-3.54521126e-02,2.02438830e+03,1.46197730e+01,-9.16974740e-02,1.43946005e-05,-2.42272049e+00,Moller 1988,p0 + p1 * TK + p2 / TK + p3 * lnTK + p4 / (TK - 263) + p5 * TK**2 + p6 / (680. - TK)
+beta_0,Mg(HSO4)2,-0.61656,-0.00075174,,,,,,Pierrot and Millero 1997,p0 + p1 * (TK - 298.15)
+beta_1,Mg(HSO4)2,7.716066,-0.0164302,,,,,,Pierrot and Millero 1997,p0 + p1 * (TK - 298.15)
+C_phi,Mg(HSO4)2,0.43026,0.00199601,,,,,,Pierrot and Millero 1997,p0 + p1 * (TK - 298.15)

@@ -1,0 +1,30 @@
+# Table A5 of Millero and Pierrot (1998) doi:10.1023/A:1009656023546
+# MgX and CaX coefficients for P = a + b * (T - 298.15) + c * (T - 298.15)**2
+Parameter,Salt,a,b,c,Range,Reference
+beta_0,MgBr2,0.432675,-5.62E-5,,0-50,(a)(b)
+beta_1,MgBr2,1.75275,3.8625E-3,,,
+C_phi,MgBr2,0.003124,,,,
+beta_0,Mg(B(OH)4)2,-0.623,6.496E-3,,5-55,(c) corrected after Simonson et al 1988 first param is negative
+beta_1,Mg(B(OH)4)2,0.2515,-0.01713
+beta_2,Mg(B(OH)4)2,-11.47,0,-3.24E-3,,
+C_phi,Mg(B(OH)4)2,0,,,,
+beta_0,Mg(ClO4)2,0.496125,5.2275E-4,,10-40,(a)(b)
+beta_1,Mg(ClO4)2,2.0085,4.5E-3,,,
+C_phi,Mg(ClO4)2,0.009578,-3.5267E-4,,,
+beta_0,CaBr2,0.3816,-5.2275E-4,,10-40,(a)(b)
+beta_1,CaBr2,1.61325,6.0375E-3,,,
+C_phi,CaBr2,-0.002572,,,,
+beta_0,Ca(B(OH)4)2,-0.4462,5.393E-3,,5-55,(c)
+beta_1,Ca(B(OH)4)2,-0.868,-0.0182,,,
+beta_2,Ca(B(OH)4)2,-15.88,0,-2.858E-03,,
+C_phi,Ca(B(OH)4)2,0,,,,
+beta_0,Ca(ClO4)2,0.451125,8.295E-4,,10-40,(a)(b)
+beta_1,Ca(ClO4)2,1.7565,5.0775E-3,,,
+C_phi,Ca(ClO4)2,-0.005001,-3.0918E-4,,,
+
+
+
+
+
+
+
