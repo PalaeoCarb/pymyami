@@ -119,8 +119,11 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     BMX_apostroph = (beta_1 / (2 * Istr * Istr)) * (-1 + (1 + (2 * sqrtI) + (2 * sqrtI)) * np.exp(-2 * sqrtI))
     CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))
     
+    ################################################################################
     # BMX* and CMX are calculated differently for 2:2 ion pairs, corrections
-    # below  # § alpha2= 6 for borates ...TODO: Look at Simonson et al 1988 to understand this
+    # below  # § alpha2= 6 for borates ...
+    # TODO: Look at Simonson et al 1988 to understand this
+    ################################################################################
     
     # MgBOH42
     cat, an = 3, 2
@@ -247,13 +250,18 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # BMX[4, 6] =BMX[4, 6] * 0  # knock out Ca-SO4
     
-    R = (m_anion * np.expand_dims(m_cation, 1) * BMX_apostroph).sum((0,1))
-    S = (m_anion * np.expand_dims(m_cation, 1) * CMX).sum((0,1))
+    ################################################################################
+    # Calculate gamma_anion and gamma_cation from BMX and CMX    
+    ################################################################################
+    
+    # anion * cation * BMX or CMX matrices
+    mR = (m_anion * np.expand_dims(m_cation, 1) * BMX_apostroph).sum((0,1))
+    mS = (m_anion * np.expand_dims(m_cation, 1) * CMX).sum((0,1))
 
     # ln_gammaCl = Z_anion[1] * Z_anion[1] * f_gamma + R - S
 
     # Original ln_gamma_anion calculation loop:
-    ln_gamma_anion = Z_anion * Z_anion * (f_gamma + R) + Z_anion * S
+    ln_gamma_anion = Z_anion * Z_anion * (f_gamma + mR) + Z_anion * mS
     for an in range(0, 7):
         for cat in range(0, 6):
             ln_gamma_anion[an] += 2 * m_cation[cat] * (
@@ -275,6 +283,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
                 )
     
     # vectorised ln_gamma_anion calculation:
+    # TODO: Runs into memory problems with large inputs. Could be simplified further? 
     # cat, cat2 = np.triu_indices(6, 1)
     # ln_gamma_anion = (
     #     Z_anion * Z_anion * (f_gamma + R) + Z_anion * S + 
@@ -282,14 +291,14 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     #     (np.expand_dims(m_anion, 1) * 2 * Theta_negative).sum(0) + 
     #     (np.expand_dims(m_anion, (0,2)) * np.expand_dims(m_cation, (0,1)) * Phi_NNP).sum(axis=(1,2)) +
     #     (np.expand_dims(m_cation[cat], 1) * np.expand_dims(m_cation[cat2], 1) * Phi_PPN[cat, cat2]).sum(axis=0)
-    # )  # TODO - could be simplified further? Runs into memory problems with large inputs.
+    # )  
     gamma_anion = np.exp(ln_gamma_anion)
 
 
     # ln_gammaCl = Z_anion[1] * Z_anion[1] * f_gamma + R - S
 
     # Original ln_gamma_cation calculation loop:
-    ln_gamma_cation = Z_cation * Z_cation * (f_gamma + R) + Z_cation * S
+    ln_gamma_cation = Z_cation * Z_cation * (f_gamma + mR) + Z_cation * mS
     for cat in range(0, 6):
         for an in range(0, 7):
             ln_gamma_cation[cat] += 2 * m_anion[an] * (
@@ -309,6 +318,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
                 )
 
     # vectorised ln_gamma_cation calculation:
+    # TODO: Runs into memory problems with large inputs. Could be simplified further? 
     # an, an2 = np.triu_indices(7, 1)
     # ln_gamma_cation = (
     #     Z_cation * Z_cation * (f_gamma + R) + Z_cation * S +
@@ -316,65 +326,44 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     #     (np.expand_dims(m_cation, 1) * (2 * Theta_positive)).sum(axis=0) +
     #     (np.expand_dims(m_cation, (0,2)) * np.expand_dims(m_anion, (0,1)) * Phi_PPN).sum(axis=(1,2))+
     #     (np.expand_dims(m_anion[an], 1) * np.expand_dims(m_anion[an2], 1) * Phi_NNP[an, an2]).sum(axis=0)
-    # )  # TODO - could be simplified further? Runs into memory problems with large inputs.
+    # )
     gamma_cation = np.exp(ln_gamma_cation)
 
     # choice of pH-scale = total pH-scale [H]T = [H]F + [HSO4]
     # so far gamma_H is the [H]F activity coefficient (= free-H pH-scale)
     # thus, conversion is required
-    # * (gamma_anion[4] / gamma_anion[6] / gamma_cation[0])
-    
     K_HSO4_conditional = calc_KS(TK=TK, Sal=Sal, Istr=Istr)
     K_HF_conditional = calc_KF(TK=TK, Sal=Sal)
+    TF = 0.0000683
+    TS = m_anion[6]
     
-    # print (gamma_anion[4], gamma_anion[6], gamma_cation[0])
-    # alpha_H = 1 / (1+ m_anion[6] / K_HSO4_conditional + 0.0000683 / (7.7896E-4 * 1.1 / 0.3 / gamma_cation[0]))
-    alpha_Hsws = 1 / (
-        1 + m_anion[6] / K_HSO4_conditional + 0.0000683 / K_HF_conditional
-    )
-    alpha_Ht = 1 / (1 + m_anion[6] / K_HSO4_conditional)
+    alpha_Hsws = 1 / (1 + TS / K_HSO4_conditional + TF / K_HF_conditional)
+    alpha_Ht = 1 / (1 + TS / K_HSO4_conditional)
 
+    # NOTE: Unclear where this next section about gamma_MGCO3 has come from - talk to Mathis!
     # A number of ion pairs are calculated explicitly: MgOH, CaCO3, MgCO3, SrCO3
     # since OH and CO3 are rare compared to the anions the anion alpha (free /
     # total) are assumed to be unity
-    gamma_MgCO3 = 1
-    gamma_CaCO3 = gamma_MgCO3
-    gamma_SrCO3 = gamma_MgCO3
+    gamma_MgCO3 = gamma_CaCO3 = gamma_SrCO3 = 1
 
-    b0b1CPhi_MgOH = np.array([-0.1, 1.658, 0, 0.028])
-    BMX_MgOH = b0b1CPhi_MgOH[0] + (b0b1CPhi_MgOH[1] / (2 * Istr)) * (
-        1 - (1 + 2 * sqrtI) * np.exp(-2 * sqrtI)
-    )
-    ln_gamma_MgOH = 1 * (f_gamma + R) + (1) * S
-    # interaction between MgOH-Cl affects MgOH gamma
-    ln_gamma_MgOH = ln_gamma_MgOH + 2 * m_anion[1] * (
-        BMX_MgOH + E_cat * b0b1CPhi_MgOH[2]
-    )
-    # interaction between MgOH-Mg-OH affects MgOH gamma
-    ln_gamma_MgOH = ln_gamma_MgOH + m_cation[3] * m_anion[1] * b0b1CPhi_MgOH[3]
+    b0b1CPhi_MgOH = np.array([-0.1, 1.658, 0, 0.028])  # where is this from?
+    BMX_MgOH = b0b1CPhi_MgOH[0] + (b0b1CPhi_MgOH[1] / (2 * Istr)) * (1 - (1 + 2 * sqrtI) * np.exp(-2 * sqrtI))
+    ln_gamma_MgOH = 1 * (f_gamma + mR) + (1) * mS
+    ln_gamma_MgOH = ln_gamma_MgOH + 2 * m_anion[1] * (BMX_MgOH + E_cat * b0b1CPhi_MgOH[2])  # interaction between MgOH-Cl affects MgOH gamma
+    ln_gamma_MgOH = ln_gamma_MgOH + m_cation[3] * m_anion[1] * b0b1CPhi_MgOH[3]  # interaction between MgOH-Mg-OH affects MgOH gamma
     gamma_MgOH = np.exp(ln_gamma_MgOH)
 
-    K_MgOH = np.power(10, -(3.87 - 501.6 / TK)) / (
-        gamma_cation[3] * gamma_anion[0] / gamma_MgOH
-    )
-    K_MgCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (
-        gamma_cation[3] * gamma_anion[5] / gamma_MgCO3
-    )
-    K_CaCO3 = np.power(10, -(1.178 + 0.0066154 * TK)) / (
-        gamma_cation[4] * gamma_anion[5] / gamma_CaCO3
-    )
+    K_MgOH = np.power(10, -(3.87 - 501.6 / TK)) / (gamma_cation[3] * gamma_anion[0] / gamma_MgOH)
+    K_MgCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (gamma_cation[3] * gamma_anion[5] / gamma_MgCO3)
+    K_CaCO3 = np.power(10, -(1.178 + 0.0066154 * TK)) / (gamma_cation[4] * gamma_anion[5] / gamma_CaCO3)
     # K_CaCO3 = np.power(10, (-1228.732 - 0.299444 * T + 35512.75 / T +485.818 * np.log10(T))) / (gamma_cation[4] * gamma_anion[5] / gamma_CaCO3) # Plummer and Busenberg82
     # K_MgCO3 = np.power(10, (-1228.732 +(0.15) - 0.299444 * T + 35512.75 / T
     # +485.818 * np.log10(T))) / (gamma_cation[4] * gamma_anion[5] /
     # gamma_CaCO3)# Plummer and Busenberg82
-    K_SrCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (
-        gamma_cation[5] * gamma_anion[5] / gamma_SrCO3
-    )
+    K_SrCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (gamma_cation[5] * gamma_anion[5] / gamma_SrCO3)
 
     alpha_OH = 1 / (1 + (m_cation[3] / K_MgOH))
-    alpha_CO3 = 1 / (
-        1 + (m_cation[3] / K_MgCO3) + (m_cation[4] / K_CaCO3) + (m_cation[5] / K_SrCO3)
-    )
+    alpha_CO3 = 1 / (1 + (m_cation[3] / K_MgCO3) + (m_cation[4] / K_CaCO3) + (m_cation[5] / K_SrCO3))
 
     return ({'cation': gamma_cation, 'anion': gamma_anion}, 
             {'Hsws': alpha_Hsws, 'Ht': alpha_Ht, 'OH': alpha_OH, 'CO3': alpha_CO3})
