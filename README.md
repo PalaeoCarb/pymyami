@@ -31,11 +31,31 @@ pip install pymyami
 
 ## Example Usage
 ```python
-from pymyami import calc_Fcorr, approximate Fcorr
+from pymyami impor  t calc_Fcorr, approximate_Fcorr
 
 # run the model to calculate correction factors
 calc_Fcorr(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
 
+>>> {'KspC': 0.7843309390178521,
+     'KspA': 0.7843309390178521,
+     'K1': 1.002405617170862,
+     'K2': 0.7885093392132683,
+     'KW': 0.7459757009835559,
+     'KB': 0.9382494946753764,
+     'K0': 1.0056418412233974,
+     'KS': 0.9573891319238595}
+
 # use the polynomial approximation to calculate correction factors
 approximate_Fcorr(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
+
+>>> UserWarning: WARNING: using approximate MyAMI K correction factors instead of calculated ones. These are only accurate to within ~0.25%. Please dont use them for anything critical.
+
+>>> {'K0': array(1.00565919),
+     'K1': array(1.00238861),
+     'K2': array(0.78858314),
+     'KB': array(0.93815884),
+     'KW': array(0.74594823),
+     'KspC': array(0.78442705),
+     'KspA': array(0.78442705),
+     'KS': array(0.95738293)}
 ```
