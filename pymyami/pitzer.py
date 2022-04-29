@@ -229,10 +229,11 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     #     * (1 - (1 + 1.4 * sqrtI) * np.exp(-1.4 * sqrtI))
     #     + (beta_2[cat, an] / (72 * Istr)) * (1 - (1 + 12 * sqrtI) * np.exp(-12 * sqrtI))
     # )
-    BMX_apostroph[cat, an] = (
-        (beta_1[cat, an] / (0.98 * Istr * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
-        (beta_2[cat, an] / (72 * Istr * Istr)) * (-1 - (1 + 12 * sqrtI + 72 * Istr) * np.exp(-12 * sqrtI))
-    )
+    # BMX_apostroph[cat, an] = (
+    #     (beta_1[cat, an] / (0.98 * Istr * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
+    #     # (beta_2[cat, an] / (72 * Istr * Istr)) * (-1 - (1 + 12 * sqrtI + 72 * Istr) * np.exp(-12 * sqrtI))  # THIS LINE CONTAINS A TYPO (Istr * Istr)
+    #     (beta_2[cat, an] / (72 * Istr)) * (-1 - (1 + 12 * sqrtI + 72 * Istr) * np.exp(-12 * sqrtI))
+    # )
     
     # BMX_apostroph[cat, an] = (
     #     (beta_1[cat, an] / (0.98 * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
