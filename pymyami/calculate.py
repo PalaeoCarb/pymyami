@@ -1,4 +1,4 @@
-""""
+"""
 User-facing function for calculating K correction factors using MyAMI
 """
 
