@@ -5,6 +5,8 @@ import pandas as pd
 
 import pymyami
 
+TEST_TOLERANCE = 0.5  # maximum % difference from original
+
 class MyAMI_V1_crosscheck(unittest.TestCase):
 
     def test_Fcorr(self):
@@ -28,7 +30,7 @@ class MyAMI_V1_crosscheck(unittest.TestCase):
             avgpercentdiff = 100 * np.mean(rdiff)
             
             print(f'  {k}: {maxpercentdiff:.2f}% max, {avgpercentdiff:.2f}% avg')
-            self.assertLess(maxpercentdiff, 0.4, msg=f'Maximum difference in {k} correction factor too large: {maxpercentdiff}%')
+            self.assertLess(maxpercentdiff, TEST_TOLERANCE, msg=f'Maximum difference in {k} correction factor too large: {maxpercentdiff}%')
 
 if __name__ == "__main__":
     unittest.main()
