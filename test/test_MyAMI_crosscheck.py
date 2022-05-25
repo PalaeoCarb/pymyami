@@ -5,7 +5,7 @@ import pandas as pd
 
 import pymyami
 
-TEST_TOLERANCE = 0.5  # maximum % difference from original
+TEST_TOLERANCE = 2.5  # maximum % difference from original
 
 class MyAMI_V1_crosscheck(unittest.TestCase):
 
@@ -19,7 +19,7 @@ class MyAMI_V1_crosscheck(unittest.TestCase):
 
         Ks = 'K0', 'K1', 'K2', 'KW', 'KB', 'KspA', 'KspC', 'KS'
 
-        print('Comparing Fcorr to MyAMI_V1 (must be <0.4% max difference)')
+        print(f'Comparing Fcorr to MyAMI_V1 (must be <{TEST_TOLERANCE:.1f}% max difference)')
         for k in Ks:
             v1 = check[k]
             new = new_Fcorr[k]
