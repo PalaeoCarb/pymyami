@@ -5,7 +5,7 @@ import pandas as pd
 
 import pymyami
 
-TEST_TOLERANCE = 2.5  # maximum % difference from original
+TEST_TOLERANCE = 5  # maximum % difference from original
 
 class MyAMI_V1_crosscheck(unittest.TestCase):
 
