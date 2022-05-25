@@ -250,6 +250,8 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
         beta_2 * 2 / (alpha_2**2 * Istr   ) * (-1 - (1 + alpha_2 * sqrtI + alpha_2**2 * Istr / 2) * np.exp(-alpha_2 * sqrtI))
         )   # Eq. A13 and A17
 
+    CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
+
     # TODO: ask Mathis about typo
     # keep sqrtI -> Istr typo so that tests keep passing
     # BMX_apostroph = (
@@ -267,54 +269,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     ################################################################################
 
     # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * Istr)) * np.exp(-2 * sqrtI))  # Eq. A13
-    CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
-    
-    # BMX* and CMX are calculated differently for 2:2 ion pairs, corrections.
-    
-    # In Simonson et al (1988; doi:10.1007/BF00647311):
-    # BMX = beta_0 + beta_1 * h1(I) + beta_2 * h2(I)  (Eq. 5)
-    # hj(I) = 2 / alpha_j**2 I) * (1 - alpha_j * sqrtI) * exp(-alpha_j * sqrtI)  (Eq. 6)
-    # where j is 1 or 2. In the case of borate ion pairs, alpha_1 = 1.4 and alpha_2 = 6, in the case of sulphate ion pairs alpha_1 = 1.4 and alpha_2 = 12
-    
-    # Went back to original Pitzer book (Ion Interaction Approach: Theory and Data Correlation). Equations in papers are not correct as written, but ARE correct here.
-    # Original Pitzer equations:
-    # 
-    # BMX = beta_0 + beta_1 * g(a * I**0.5) + beta_2 * g(a * I**0.5)
-    # g(x) = 2 * [1 - (1 + x) * exp(-x)] / x**2
-    # 
-    # BMX = beta_0 + beta_1 a / (a**2 * I) * (1 - (1 + a * I**0.5) * exp(-a * I**0.5)) + beta_2 * a / (a**2 * I) * (1 - (1 + a * I**0.5) * exp(-a * I**0.5))
-    
-    ################################################################################
-    
-    # # MgBOH42
-    # # cat, an = 3, 2
-    # # cat, an = CA_IND['Mg'], AN_IND['B(OH)4']
-    # cat, an = get_ion_index('Mg-B(OH)4')
-    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-    
-    # # MgSO4
-    # # cat, an = 3, 6 
-    # # cat, an = CA_IND['Mg'], AN_IND['SO4']
-    # cat, an = get_ion_index('Mg-SO4')
-    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-    
-    # # CaBOH42
-    # # cat, an = 4, 2 
-    # # cat, an = CA_IND['Ca'], AN_IND['B(OH)4']
-    # cat, an = get_ion_index('Ca-B(OH)4')
-    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-
-    # # CaSO4
-    # # cat, an = 4, 6
-    # # cat, an = CA_IND['Ca'], AN_IND['SO4']
-    # cat, an = get_ion_index('Ca-SO4')
-    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-
-    # # SrBOH42
-    # # cat, an = 5, 2 
-    # # cat, an = CA_IND['Sr'], AN_IND['B(OH)4']
-    # cat, an = get_ion_index('Sr-B(OH)4')
-    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
+    # CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
 
     # H-SO4
     # cat, an = 0, 6
