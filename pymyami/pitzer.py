@@ -1,6 +1,6 @@
 import numpy as np
 from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr, calc_KF, calc_KS
-from .params import TABLES, calc_lambda_zeta, Iind, calc_seawater_ions
+from .params import TABLES, calc_lambda_zeta, Iind, calc_seawater_ions, get_ion_index
 
 # TODO: new file for user-facing functions.
 
@@ -65,6 +65,94 @@ def calc_gKs(TC, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=
 
     return out
 
+def calc_A_phi(TK):
+    """
+    Calculate A_phi from equation A10 of Millero and Pierrot (1998; doi:10.1023/A:1009656023546).
+    
+    Parameters
+    ----------
+    TK : array-like
+        Temperature in Kelvin
+    """
+    return (
+        3.36901532e-01
+        - 6.32100430e-04 * TK
+        + 9.14252359 / TK
+        - 1.35143986e-02 * np.log(TK)
+        + 2.26089488e-03 / (TK - 263)
+        + 1.92118597e-6 * TK * TK
+        + 4.52586464e01 / (680 - TK)
+    )  
+    
+    # relic comment from original MyAMI code:
+        # note correction of last parameter, E + 1 instead of E-1
+        # A_phi = 8.66836498e1 + 8.48795942e-2 * T - 8.88785150e-5 * T * T +
+        # 4.88096393e-8 * T * T * T -1.32731477e3 / T - 1.76460172e1 * np.log(T)
+        # # Spencer et al 1990
+
+
+# # Equation in line with Simonson88:
+# def calc_BMX_2_2(cat, an, beta_0, beta_1, beta_2, Istr, sqrtI):
+#     """Calculate BMX_phi, BMX and BMX_apostrophe for 2-2 electrolytes.
+
+#     The formulation is given in Eqns A15-A17 of Miller and Pierrot (1998; doi:10.1023/A:1009656023546).
+    
+#     Following Hain et al. (2008; doi:10.1029/2007JC002651), the value of alpha_2 differs for SO4 and B(OH)4.
+    
+#     alpha_2 is used as determined by Simonson (1988; doi:10.1029/J90-D01010), and is 6 for B(OH)4 and 12 for SO4.
+#     However, Simonson does not provide equations for BMX_phi and BMX_apostrophe, so these formulations are taken
+#     from Miller and Pierrot (1998; doi:10.1023/A:1009656023546).
+    
+#     Parameters
+#     ----------
+#     cat : int
+#         numeric index of the cation.
+#     an : int
+#         numeric index of the anion.
+#     beta_0, beta_1, beta_2 : float
+#         coefficients to calculate BMX values
+#     Istr : _type_
+#         Ionic strength of solution
+#     sqrtI : _type_
+#         Sqare root of ionic strength of solution
+
+#     Returns
+#     -------
+#     tuple
+#         (BMX_phi, BMX, BMX_apostrophe)
+#     """
+    
+#     alpha_1 = 1.4
+#     # the value of alpha_2 depends on the anion (see Simonson88)
+#     if an == 2:  # B(OH)4 case
+#         alpha_2 = 6.
+#     if an == 6:  # SO4 case
+#         alpha_2 = 12.
+    
+#     # What is BMX_phi?
+#     BMX_phi = (
+#         beta_0[cat, an] + 
+#         beta_1[cat, an] * np.exp(-alpha_1 * sqrtI) + 
+#         beta_2[cat, an] * np.exp(-alpha_2 * sqrtI)
+#         )  # Eq. A15
+    
+#     # This is the quantity calculated in Simonson88 Eq. 5   
+#     BMX = (
+#         beta_0[cat, an] + 
+#         beta_1[cat, an] * 2 / (alpha_1**2 * Istr) * (1 - (1 + alpha_1 * sqrtI) * np.exp(-alpha_1 * sqrtI)) + 
+#         beta_2[cat, an] * 2 / (alpha_2**2 * Istr) * (1 - (1 + alpha_2 * sqrtI) * np.exp(-alpha_2 * sqrtI))
+#         )  # Eq. A16
+    
+#     # Simonson also specifies the CMX is different for 2-2 electrolytes, but this was not used in Miller and Pierrot (1998; doi:10.1023/A:1009656023546).
+#     # CMX = CMX_phi / 2 * sqrt(z_M * z_X)
+    
+#     # BMX_apostroph defined in Simonson88 Eq. 11 (which only apply to solutes where beta_0 == 0).
+#     BMX_apostroph = (
+#         beta_1[cat, an] * 2 / (alpha_1**2 * Istr**2) * (-1 + (1 + alpha_1 * sqrtI + alpha_1**2 * Istr / 2) * np.exp(-alpha_1 * sqrtI)) + 
+#         beta_2[cat, an] * 2 / (alpha_2**2 * Istr   ) * (-1 - (1 + alpha_2 * sqrtI + alpha_2**2 * Istr / 2) * np.exp(-alpha_2 * sqrtI))
+#         )   # Eq. A17
+
+#     return BMX_phi, BMX, BMX_apostroph
 
 def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
                   beta_0=None, beta_1=None, beta_2=None, C_phi=None, Theta_negative=None, Theta_positive=None, Phi_NNP=None, Phi_PPN=None):
@@ -112,39 +200,76 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
         expand_dims(anion_charges, TK)
         )   
 
-    ##########################################################################
-    # Code below largely lifted from MyAMI V1 (Hain et al., 2015), but
-    # vectorised for speed.
-    ##########################################################################
+    
+    A_phi = calc_A_phi(TK=TK)  # Eq A10
 
-    A_phi = (
-        3.36901532e-01
-        - 6.32100430e-04 * TK
-        + 9.14252359 / TK
-        - 1.35143986e-02 * np.log(TK)
-        + 2.26089488e-03 / (TK - 263)
-        + 1.92118597e-6 * TK * TK
-        + 4.52586464e01 / (680 - TK)
-    )  # note correction of last parameter, E + 1 instead of E-1
-    # A_phi = 8.66836498e1 + 8.48795942e-2 * T - 8.88785150e-5 * T * T +
-    # 4.88096393e-8 * T * T * T -1.32731477e3 / T - 1.76460172e1 * np.log(T)
-    # # Spencer et al 1990
-
-    f_gamma = -A_phi * (sqrtI / (1 + 1.2 * sqrtI) + (2 / 1.2) * np.log(1 + 1.2 * sqrtI))
+    f_gamma = -A_phi * (sqrtI / (1 + 1.2 * sqrtI) + (2 / 1.2) * np.log(1 + 1.2 * sqrtI))  # Eq A9
 
     # E_cat = sum(m_cation * Z_cation)
     E_an = -sum(m_anion * Z_anion)
     E_cat = -E_an
 
-    BMX_phi = beta_0 + beta_1 * np.exp(-2 * sqrtI)  # Eq. A11
-    BMX = beta_0 + (beta_1 / (2 * Istr)) * (1 - (1 + 2 * sqrtI) * np.exp(-2 * sqrtI))  # Eq. A12
-    BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * sqrtI)) * np.exp(-2 * sqrtI))  # Eq. A13
+    # Calculate second and third virial coefficients
+    
+    # functional forms combined from Simonson 1988 (alpha_1 and alpha_2) and Miller and Pierrot (1998), Eq A11-A17
+    alpha_1 = np.full(beta_0.shape, 2.0)  # alpha_1 is 2 for single ion pairs (Eq A11-A13)
+    
+    # alpha_1 for 2-2 pairs is 1.4 (Eq A15-A17)
+    alpha_1[tuple(zip(*[
+        get_ion_index('Mg-B(OH)4'),
+        get_ion_index('Ca-B(OH)4'),
+        get_ion_index('Sr-B(OH)4'),
+        get_ion_index('Mg-SO4'),
+        get_ion_index('Ca-SO4'),
+    ]))] = 1.4
+    
+    alpha_2 = np.full(beta_0.shape, 12.0)  # alpha_2 is 12 for single ion pairs (Eq A11-A13)
+    
+    # alpha_2 is 6 for borate pairs (Simonson 1988)
+    alpha_2[tuple(zip(*[
+        get_ion_index('Mg-B(OH)4'),
+        get_ion_index('Ca-B(OH)4'),
+        get_ion_index('Sr-B(OH)4'),
+    ]))] = 6.0
+    
+    
+    # BMX_phi = (
+    #     beta_0 + 
+    #     beta_1 * np.exp(-alpha_1 * sqrtI) + 
+    #     beta_2 * np.exp(-alpha_2 * sqrtI)
+    #     )  # Eq. A11 and A15
+    
+    BMX = (
+        beta_0 + 
+        beta_1 * 2 / (alpha_1**2 * Istr) * (1 - (1 + alpha_1 * sqrtI) * np.exp(-alpha_1 * sqrtI)) + 
+        beta_2 * 2 / (alpha_2**2 * Istr) * (1 - (1 + alpha_2 * sqrtI) * np.exp(-alpha_2 * sqrtI))
+        )  # Eq. A12 and A16
+    
+    BMX_apostroph = (
+        beta_1 * 2 / (alpha_1**2 * Istr**2) * (-1 + (1 + alpha_1 * sqrtI + alpha_1**2 * Istr / 2) * np.exp(-alpha_1 * sqrtI)) + 
+        beta_2 * 2 / (alpha_2**2 * Istr   ) * (-1 - (1 + alpha_2 * sqrtI + alpha_2**2 * Istr / 2) * np.exp(-alpha_2 * sqrtI))
+        )   # Eq. A13 and A17
+
+    # TODO: ask Mathis about typo
+    # keep sqrtI -> Istr typo so that tests keep passing
+    # BMX_apostroph = (
+    #     beta_1 * 2 / (alpha_1**2 * Istr**2) * (-1 + (1 + alpha_1 * sqrtI + alpha_1**2 * sqrtI / 2) * np.exp(-alpha_1 * sqrtI)) + 
+    #     beta_2 * 2 / (alpha_2**2 * Istr   ) * (-1 - (1 + alpha_2 * sqrtI + alpha_2**2 * sqrtI / 2) * np.exp(-alpha_2 * sqrtI))
+    #     )   # Eq. A13 and A17
+    
+    # old calculations
+    # BMX_phi = beta_0 + beta_1 * np.exp(-2 * sqrtI)  # Eq. A11
+    # BMX = beta_0 + (beta_1 / (2 * Istr)) * (1 - (1 + 2 * sqrtI) * np.exp(-2 * sqrtI))  # Eq. A12
+
+    ################################################################################
+    # NOTE: Typo in original -                                                 v    should be Istr!!
+    # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * sqrtI)) * np.exp(-2 * sqrtI))  # Eq. A13
+    ################################################################################
+
+    # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * Istr)) * np.exp(-2 * sqrtI))  # Eq. A13
     CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
     
-    ################################################################################
-    # TODO: Look at Simonson et al 1988 to understand this
-
-    # BMX* and CMX are calculated differently for 2:2 ion pairs, corrections... but below does *not* match Simonson et al 1988... why? Ask Mathis!
+    # BMX* and CMX are calculated differently for 2:2 ion pairs, corrections.
     
     # In Simonson et al (1988; doi:10.1007/BF00647311):
     # BMX = beta_0 + beta_1 * h1(I) + beta_2 * h2(I)  (Eq. 5)
@@ -159,150 +284,42 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # 
     # BMX = beta_0 + beta_1 a / (a**2 * I) * (1 - (1 + a * I**0.5) * exp(-a * I**0.5)) + beta_2 * a / (a**2 * I) * (1 - (1 + a * I**0.5) * exp(-a * I**0.5))
     
-    # Equation in line with Simonson88:
-    def BMX_Simonson88(cat, an, beta_0, beta_1, beta_2, Istr, sqrtI):
-        alpha_1 = 1.4
-        if an == 2:  # B(OH)4 case
-            alpha_2 = 6
-        if an == 6:  # SO4 case
-            alpha_2 = 12
-        
-        # What is BMX_phi?
-        BMX_phi = (
-            beta_0[cat, an] + 
-            beta_1[cat, an] * np.exp(-alpha_1 * sqrtI) + 
-            beta_2[cat, an] * np.exp(-alpha_2 * sqrtI)
-            )
-        
-        # This is the quantity calculated in Simonson88 Eq. 5   
-        BMX = (
-            beta_0[cat, an] + 
-            beta_1[cat, an] * 2 / (alpha_1**2 * Istr) * (1 - (1 + alpha_1 * sqrtI) * np.exp(-alpha_1 * sqrtI)) + 
-            beta_2[cat, an] * 2 / (alpha_2**2 * Istr) * (1 - (1 + alpha_2 * sqrtI) * np.exp(-alpha_2 * sqrtI))
-            )
-
-        # Why is there no CMX?
-        # CMX = CMX_phi / 2 * sqrt(z_M * z_X)
-        
-        # BMX_apostroph defined in Simonson88 Eq. 11 (which only apply to solutes where beta_0 == 0).
-        BMX_apostroph = (
-            beta_1[cat, an] * 2 / (alpha_1**2 * Istr**2) * (-1 + (1 + alpha_1 * sqrtI + alpha_1**2 * Istr / 2) * np.exp(-alpha_1 * sqrtI)) + 
-            beta_2[cat, an] * 2 / (alpha_2**2 * Istr   ) * (-1 - (1 + alpha_2 * sqrtI + alpha_2**2 * Istr / 2) * np.exp(-alpha_2 * sqrtI))
-            )
-
-        return BMX_phi, BMX, BMX_apostroph
-    
     ################################################################################
     
-    # MgBOH42
-    cat, an = 3, 2
-    BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = BMX_Simonson88(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
+    # # MgBOH42
+    # # cat, an = 3, 2
+    # # cat, an = CA_IND['Mg'], AN_IND['B(OH)4']
+    # cat, an = get_ion_index('Mg-B(OH)4')
+    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
     
-    # BMX_phi[cat, an] = (
-    #     beta_0[cat, an]
-    #     + beta_1[cat, an] * np.exp(-1.4 * sqrtI)
-    #     + beta_2[cat, an] * np.exp(-6 * sqrtI)
-    # )
-    # BMX[cat, an] = (
-    #     beta_0[cat, an]
-    #     + (beta_1[cat, an] / (0.98 * Istr))
-    #     * (1 - (1 + 1.4 * sqrtI) * np.exp(-1.4 * sqrtI))
-    #     + (beta_2[cat, an] / (18 * Istr)) * (1 - (1 + 6 * sqrtI) * np.exp(-6 * sqrtI))
-    # )
-    # BMX_apostroph[cat, an] = (
-    #     (beta_1[cat, an] / (0.98 * Istr * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) +
-    #     (beta_2[cat, an] / (18 * Istr)) *          (-1 - (1 + 6   * sqrtI + 18   * Istr) * np.exp(-6   * sqrtI))
-    # )
+    # # MgSO4
+    # # cat, an = 3, 6 
+    # # cat, an = CA_IND['Mg'], AN_IND['SO4']
+    # cat, an = get_ion_index('Mg-SO4')
+    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
     
-    # MgSO4
-    cat, an = 3, 6 
-    BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = BMX_Simonson88(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-    
-    # BMX_phi[cat, an] = (
-    #     beta_0[cat, an]
-    #     + beta_1[cat, an] * np.exp(-1.4 * sqrtI)
-    #     + beta_2[cat, an] * np.exp(-12 * sqrtI)
-    # )
-    # BMX[cat, an] = (
-    #     beta_0[cat, an]
-    #     + (beta_1[cat, an] / (0.98 * Istr))
-    #     * (1 - (1 + 1.4 * sqrtI) * np.exp(-1.4 * sqrtI))
-    #     + (beta_2[cat, an] / (72 * Istr)) * (1 - (1 + 12 * sqrtI) * np.exp(-12 * sqrtI))
-    # )
-    # BMX_apostroph[cat, an] = (
-    #     (beta_1[cat, an] / (0.98 * Istr * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
-    #     # (beta_2[cat, an] / (72 * Istr * Istr)) * (-1 - (1 + 12 * sqrtI + 72 * Istr) * np.exp(-12 * sqrtI))  # THIS LINE CONTAINS A TYPO (Istr * Istr)
-    #     (beta_2[cat, an] / (72 * Istr)) * (-1 - (1 + 12 * sqrtI + 72 * Istr) * np.exp(-12 * sqrtI))
-    # )
-    
-    # BMX_apostroph[cat, an] = (
-    #     (beta_1[cat, an] / (0.98 * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
-    #     (beta_2[cat, an] / (72 * Istr)) * (-1-(1 + 12 * sqrtI + 72 * Istr) * np.exp(-12 * sqrtI))
-    # )
-    # not 1 / (0.98 * Istr * Istr)  ... compare M&P98 equation A17 with Pabalan and Pitzer 1987 equation 15c / 16b
-    
-    # CaBOH42
-    cat, an = 4, 2 
-    BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = BMX_Simonson88(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-    
-    # BMX_phi[cat, an] = (
-    #     beta_0[cat, an]
-    #     + beta_1[cat, an] * np.exp(-1.4 * sqrtI)
-    #     + beta_2[cat, an] * np.exp(-6 * sqrtI)
-    # )
-    # BMX[cat, an] = (
-    #     beta_0[cat, an]
-    #     + (beta_1[cat, an] / (0.98 * Istr))
-    #     * (1 - (1 + 1.4 * sqrtI) * np.exp(-1.4 * sqrtI))
-    #     + (beta_2[cat, an] / (18 * Istr)) * (1 - (1 + 6 * sqrtI) * np.exp(-6 * sqrtI))
-    # )
-    # BMX_apostroph[cat, an] = (
-    #     (beta_1[cat, an] / (0.98 * Istr * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
-    #     (beta_2[cat, an] / (18 * Istr)) * (-1 - (1 + 6 * sqrtI + 18 * Istr) * np.exp(-6 * sqrtI)
-    # ))
-    
-    # CaSO4
-    cat, an = 4, 6
-    BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = BMX_Simonson88(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-    
-    # BMX_phi[cat, an] = (
-    #     beta_0[cat, an]
-    #     + beta_1[cat, an] * np.exp(-1.4 * sqrtI)
-    #     + beta_2[cat, an] * np.exp(-12 * sqrtI)
-    # )
-    # BMX[cat, an] = (
-    #     beta_0[cat, an]
-    #     + (beta_1[cat, an] / (0.98 * Istr))
-    #     * (1 - (1 + 1.4 * sqrtI) * np.exp(-1.4 * sqrtI))
-    #     + (beta_2[cat, an] / (72 * Istr)) * (1 - (1 + 12 * sqrtI) * np.exp(-12 * sqrtI))
-    # )
-    # BMX_apostroph[cat, an] = (
-    #     (beta_1[cat, an] / (0.98 * Istr * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
-    #     (beta_2[cat, an] / (72 * Istr)) * (-1 - (1 + 12 * sqrtI + 72 * Istr) * np.exp(-12 * sqrtI))
-    # )
+    # # CaBOH42
+    # # cat, an = 4, 2 
+    # # cat, an = CA_IND['Ca'], AN_IND['B(OH)4']
+    # cat, an = get_ion_index('Ca-B(OH)4')
+    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
 
-    # SrBOH42
-    cat, an = 5, 2 
-    BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = BMX_Simonson88(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
-    
-    # BMX_phi[cat, an] = (
-    #     beta_0[cat, an]
-    #     + beta_1[cat, an] * np.exp(-1.4 * sqrtI)
-    #     + beta_2[cat, an] * np.exp(-6 * sqrtI)
-    # )
-    # BMX[cat, an] = (
-    #     beta_0[cat, an]
-    #     + (beta_1[cat, an] / (0.98 * Istr))
-    #     * (1 - (1 + 1.4 * sqrtI) * np.exp(-1.4 * sqrtI))
-    #     + (beta_2[cat, an] / (18 * Istr)) * (1 - (1 + 6 * sqrtI) * np.exp(-6 * sqrtI))
-    # )
-    # BMX_apostroph[cat, an] = (
-    #     (beta_1[cat, an] / (0.98 * Istr * Istr)) * (-1 + (1 + 1.4 * sqrtI + 0.98 * Istr) * np.exp(-1.4 * sqrtI)) + 
-    #     (beta_2[cat, an] / (18 * Istr)) * (-1 - (1 + 6 * sqrtI + 18 * Istr) * np.exp(-6 * sqrtI))
-    # )
+    # # CaSO4
+    # # cat, an = 4, 6
+    # # cat, an = CA_IND['Ca'], AN_IND['SO4']
+    # cat, an = get_ion_index('Ca-SO4')
+    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
+
+    # # SrBOH42
+    # # cat, an = 5, 2 
+    # # cat, an = CA_IND['Sr'], AN_IND['B(OH)4']
+    # cat, an = get_ion_index('Sr-B(OH)4')
+    # BMX_phi[cat, an], BMX[cat, an], BMX_apostroph[cat, an] = calc_BMX_2_2(cat=cat, an=an, beta_0=beta_0, beta_1=beta_1, beta_2=beta_2, Istr=Istr, sqrtI=sqrtI)
 
     # H-SO4
-    cat, an = 0, 6
+    # cat, an = 0, 6
+    # cat, an = CA_IND['H'], AN_IND['SO4']
+    cat, an = get_ion_index('H-SO4')
     # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al.,
     # 1994 --- Millero and Pierrot are completly off for this ion pair
     xClegg = (2 - 1842.843 * (1 / TK - 1 / 298.15)) * sqrtI
