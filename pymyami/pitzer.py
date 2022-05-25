@@ -271,17 +271,14 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * Istr)) * np.exp(-2 * sqrtI))  # Eq. A13
     # CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
 
-    # H-SO4
-    # cat, an = 0, 6
-    # cat, an = CA_IND['H'], AN_IND['SO4']
+    # H-SO4  -  TODO: unclear how this comes from Clegg et al, 1994...
     cat, an = get_ion_index('H-SO4')
     # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al.,
     # 1994 --- Millero and Pierrot are completly off for this ion pair
     xClegg = (2 - 1842.843 * (1 / TK - 1 / 298.15)) * sqrtI
     # xClegg = (2) * sqrtI
     gClegg = 2 * (1 - (1 + xClegg) * np.exp(-xClegg)) / (xClegg * xClegg)
-    # alpha = (2 - 1842.843 * (1 / T - 1 / 298.15)) see Table 6 in Clegg et al
-    # 1994
+    # alpha = (2 - 1842.843 * (1 / T - 1 / 298.15)) see Table 6 in Clegg et al 1994
     BMX[cat, an] = beta_0[cat, an] + beta_1[cat, an] * gClegg
     BMX_apostroph[cat, an] = beta_1[cat, an] / Istr * (np.exp(-xClegg) - gClegg)
 
@@ -389,19 +386,22 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     alpha_Hsws = 1 / (1 + TS / K_HSO4_conditional + TF / K_HF_conditional)
     alpha_Ht = 1 / (1 + TS / K_HSO4_conditional)
 
-    # NOTE: Unclear where this next section about gamma_MgCO3 has come from - talk to Mathis!
+    # TODO: Unclear where this next section about gamma_MgCO3 has come from - talk to Mathis!
     # A number of ion pairs are calculated explicitly: MgOH, CaCO3, MgCO3, SrCO3
     # since OH and CO3 are rare compared to the anions the anion alpha (free /
     # total) are assumed to be unity
     gamma_MgCO3 = gamma_CaCO3 = gamma_SrCO3 = 1
 
-    b0b1CPhi_MgOH = np.array([-0.1, 1.658, 0, 0.028])  # where is this from, and what does it do?
+    b0b1CPhi_MgOH = np.array([-0.1, 1.658, 0, 0.028])  # TODO This combines parameters from A8 (first 3) and A11 (last), but not clear how they are used
     BMX_MgOH = b0b1CPhi_MgOH[0] + (b0b1CPhi_MgOH[1] / (2 * Istr)) * (1 - (1 + 2 * sqrtI) * np.exp(-2 * sqrtI))
-    ln_gamma_MgOH = 1 * (f_gamma + mR) + (1) * mS
-    ln_gamma_MgOH = ln_gamma_MgOH + 2 * m_anion[1] * (BMX_MgOH + E_cat * b0b1CPhi_MgOH[2])  # interaction between MgOH-Cl affects MgOH gamma
-    ln_gamma_MgOH = ln_gamma_MgOH + m_cation[3] * m_anion[1] * b0b1CPhi_MgOH[3]  # interaction between MgOH-Mg-OH affects MgOH gamma
+    ln_gamma_MgOH = (
+        1 * (f_gamma + mR) + 1 * mS +
+        2 * m_anion[1] * (BMX_MgOH + E_cat * b0b1CPhi_MgOH[2]) +  # interaction between MgOH-Cl affects MgOH gamma
+        m_cation[3] * m_anion[1] * b0b1CPhi_MgOH[3]  # interaction between MgOH-Mg-OH affects MgOH gamma
+        )
     gamma_MgOH = np.exp(ln_gamma_MgOH)
 
+    # TODO: where do all these parameters come from - Table II? Calculating empirical Ks?
     K_MgOH = np.power(10, -(3.87 - 501.6 / TK)) / (gamma_cation[3] * gamma_anion[0] / gamma_MgOH)
     K_MgCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (gamma_cation[3] * gamma_anion[5] / gamma_MgCO3)
     K_CaCO3 = np.power(10, -(1.178 + 0.0066154 * TK)) / (gamma_cation[4] * gamma_anion[5] / gamma_CaCO3)
