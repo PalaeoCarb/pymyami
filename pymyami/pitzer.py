@@ -74,6 +74,7 @@ def calc_A_phi(TK):
     TK : array-like
         Temperature in Kelvin
     """
+    # TODO: put these in an external file?
     return (
         3.36901532e-01
         - 6.32100430e-04 * TK
@@ -282,7 +283,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     BMX[cat, an] = beta_0[cat, an] + beta_1[cat, an] * gClegg
     BMX_apostroph[cat, an] = beta_1[cat, an] / Istr * (np.exp(-xClegg) - gClegg)
 
-    C1_HSO4 = 0  # not sure what this is, but was in original MyAMI...
+    C1_HSO4 = 0  # TODO: not sure what this is, but was in original MyAMI...
     CMX[cat, an] = (
         C_phi[cat, an] + 4 * C1_HSO4 * 
         (6 - (6 + 2.5 * sqrtI * (6 + 3 * 2.5 * sqrtI + 2.5 * sqrtI * 2.5 * sqrtI)) *
@@ -459,12 +460,12 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
     # ln_gammaCO2 += (m_zeta * zetaCO2).sum((0,1))  # zetaCO2 (not used in original MyAMI, introduces small differences...)
     gammaCO2 = np.exp(ln_gammaCO2)  # as according to He and Morse 1993
 
-
+    # TODO: unclear where this comes from
     gammaCO2gas = np.exp(
         1 / (8.314462175 * TK *
             (0.10476 - 61.0102 / TK - 660000 / TK / TK / TK - 2.47e27 / np.power(TK, 12))
         )
-    )  # unclear where this comes from.
+    )
 
     ##########################
     # CALCULATION OF gammaB
