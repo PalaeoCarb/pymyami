@@ -1,3 +1,6 @@
+"""
+User-facing function for approximating K correction factors using MyAMI
+"""
 import json
 import numpy as np
 from matplotlib.gridspec import GridSpec
