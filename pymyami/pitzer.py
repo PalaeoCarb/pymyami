@@ -1,6 +1,6 @@
 import numpy as np
 from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr, calc_KF, calc_KS
-from .params import TABLES, calc_lambda_zeta, Iind, calc_seawater_ions, get_ion_index
+from .params import TABLES, calc_lambda_zeta, calc_seawater_ions, get_ion_index, CATION_CHG, ANION_CHG, ION_IND
 
 # TODO: new file for user-facing functions.
 
@@ -188,17 +188,15 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # make tables of ion charges used in later calculations
 
     # cation order: [H, Na, K, Mg, Ca, Sr]
-    cation_charges = np.array([1, 1, 1, 2, 2, 2])
     Z_cation = np.full(
-        (cation_charges.size, *TK.shape),
-        expand_dims(cation_charges, TK)
+        (CATION_CHG.size, *TK.shape),
+        expand_dims(CATION_CHG, TK)
         )
 
     # anion order: [OH, Cl, B(OH)4, HCO3, HSO4, CO3, SO4]
-    anion_charges = np.array([-1, -1, -1, -1, -1, -2, -2])
     Z_anion = np.full(
-        (anion_charges.size, *TK.shape),
-        expand_dims(anion_charges, TK)
+        (ANION_CHG.size, *TK.shape),
+        expand_dims(ANION_CHG, TK)
         )   
 
     
@@ -440,8 +438,8 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
     cations = ['H', 'Na', 'K', 'Mg', 'Ca']
     anions = ['Cl', 'SO4']
     
-    m_cation = np.array([m_cat[Iind[c]] for c in cations])
-    m_anion = np.array([m_an[Iind[a]] for a in anions])
+    m_cation = np.array([m_cat[ION_IND[c]] for c in cations])
+    m_anion = np.array([m_an[ION_IND[a]] for a in anions])
     m_ion = np.concatenate([m_cation, m_anion])
     
     m_zeta = (np.expand_dims(m_anion,1) * np.expand_dims(m_cation,0))  # matrix for zeta calculation
