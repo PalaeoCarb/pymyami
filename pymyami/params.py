@@ -79,8 +79,8 @@ ANION_IND = {
 ANION_CHG = np.array([-1, -1, -1, -1, -1, -2, -2])
 
 # count ions
-N_CA = len(CATION_IND)  # H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
-N_AN = len(ANION_IND)  # OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
+N_CATION = len(CATION_IND)  # H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
+N_ANION = len(ANION_IND)  # OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
 
 # build a regex for pulling ions out of salt names
 recations = '|'.join(CATION_IND.keys())
@@ -287,7 +287,7 @@ def calc_beta_C(TK):
     Tsub = TK - 298.15
 
     # create blank parameter tables
-    params = {k: np.zeros((N_CA, N_AN, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
+    params = {k: np.zeros((N_CATION, N_ANION, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
 
     # All except Table A8 - Temperature Sensitive
     for table in EQ_TABLES:
@@ -335,10 +335,10 @@ def calc_Theta_Phi(TK):
     """
 
     # create empty arrays
-    Theta_positive = np.zeros((N_CA, N_CA, *TK.shape))
-    Theta_negative = np.zeros((N_AN, N_AN, *TK.shape))
-    Phi_PPN = np.zeros((N_CA, N_CA, N_AN, *TK.shape))
-    Phi_NNP = np.zeros((N_AN, N_AN, N_CA, *TK.shape))
+    Theta_positive = np.zeros((N_CATION, N_CATION, *TK.shape))
+    Theta_negative = np.zeros((N_ANION, N_ANION, *TK.shape))
+    Phi_PPN = np.zeros((N_CATION, N_CATION, N_ANION, *TK.shape))
+    Phi_NNP = np.zeros((N_ANION, N_ANION, N_CATION, *TK.shape))
 
     # Assign static values from Table A11
     for _, row in TABA11.iterrows():

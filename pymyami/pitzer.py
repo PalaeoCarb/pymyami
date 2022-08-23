@@ -1,6 +1,6 @@
 import numpy as np
 from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr, calc_KF, calc_KS
-from .params import TABLES, calc_lambda_zeta, calc_seawater_ions, get_ion_index, CATION_CHG, ANION_CHG, ION_IND
+from .params import TABLES, calc_lambda_zeta, calc_seawater_ions, get_ion_index, CATION_CHG, ANION_CHG, ION_IND, N_CATION, N_ANION
 
 # TODO: new file for user-facing functions.
 
@@ -197,10 +197,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     Z_anion = np.full(
         (ANION_CHG.size, *TK.shape),
         expand_dims(ANION_CHG, TK)
-        )   
-
-    N_cation = len(CATION_CHG)
-    N_anion = len(ANION_CHG)
+        )
     
     A_phi = calc_A_phi(TK=TK)  # Eq A10
 
@@ -309,22 +306,22 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # Original ln_gamma_anion calculation loop:
     ln_gamma_anion = Z_anion * Z_anion * (f_gamma + mR) + Z_anion * mS
-    for an in range(0, N_anion):
-        for cat in range(0, N_cation):
+    for an in range(0, N_ANION):
+        for cat in range(0, N_CATION):
             ln_gamma_anion[an] += 2 * m_cation[cat] * (
                 BMX[cat, an] + E_cat * CMX[cat, an]
             )
-        for an2 in range(0, N_anion):
+        for an2 in range(0, N_ANION):
             ln_gamma_anion[an] += m_anion[an2] * (
                 2 * Theta_negative[an, an2]
             )
-        for an2 in range(0, N_anion):
-            for cat in range(0, N_cation):
+        for an2 in range(0, N_ANION):
+            for cat in range(0, N_CATION):
                 ln_gamma_anion[an] += (
                     m_anion[an2] * m_cation[cat] * Phi_NNP[an, an2, cat]
                 )
-        for cat in range(0, N_cation):
-            for cat2 in range(cat + 1, N_cation):
+        for cat in range(0, N_CATION):
+            for cat2 in range(cat + 1, N_CATION):
                 ln_gamma_anion[an] += (
                     m_cation[cat] * m_cation[cat2] * Phi_PPN[cat, cat2, an]
                 )
@@ -346,20 +343,20 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # Original ln_gamma_cation calculation loop:
     ln_gamma_cation = Z_cation * Z_cation * (f_gamma + mR) + Z_cation * mS
-    for cat in range(0, N_cation):
-        for an in range(0, N_anion):
+    for cat in range(0, N_CATION):
+        for an in range(0, N_ANION):
             ln_gamma_cation[cat] += 2 * m_anion[an] * (
                 BMX[cat, an] + E_cat * CMX[cat, an]
             )
-        for cat2 in range(0, N_cation):
+        for cat2 in range(0, N_CATION):
             ln_gamma_cation[cat] += m_cation[cat2] * (2 * Theta_positive[cat, cat2])
-        for cat2 in range(0, N_cation):
-            for an in range(0, N_anion):
+        for cat2 in range(0, N_CATION):
+            for an in range(0, N_ANION):
                 ln_gamma_cation[cat] += (
                     m_cation[cat2] * m_anion[an] * Phi_PPN[cat, cat2, an]
                 )
-        for an in range(0, N_anion):
-            for an2 in range(an + 1, N_anion):
+        for an in range(0, N_ANION):
+            for an2 in range(an + 1, N_ANION):
                 ln_gamma_cation[cat] += (
                     + m_anion[an] * m_anion[an2] * Phi_NNP[an, an2, cat]
                 )
