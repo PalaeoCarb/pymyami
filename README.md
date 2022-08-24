@@ -19,9 +19,7 @@ This package is a re-factor of the MyAMI model published by [Hain et al. (2015)]
 `pymyami` only calculations *correction factors* that can be applied to stoichiometric equilibrium constants (Ks). If you are looking for a convenient way to adjust Ks for variations in seawater composition, please see the [Kgen](https://github.com/PalaeoCarb/Kgen) project.
 
 ## Consistency with Hain et al. (2015)
-The K correction factors calculated by `pymyami` are similar to those calculated by the code of [Hain et al. (2015)](https://doi.org/10.1002/2014GB004986), although there are some notable deviations of up to 4%. Maximum deviations are seen when Mg and Ca increase or decrease together, meaning that these deviations shouldn't be too important for palaeo-seawater calculations, where these elements anti-correlate.
-
-A summary of maximum and average differences compared to Hain et al. (2015)
+The K correction factors calculated by `pymyami` are similar to those calculated by the code of [Hain et al. (2015)](https://doi.org/10.1002/2014GB004986), although there are some notable deviations of up to 4%. A summary of maximum and average differences compared to Hain et al. (2015) follows:
 ```
   K0: 0.00% max, 0.00% avg
   K1: 0.92% max, 0.05% avg
@@ -32,6 +30,7 @@ A summary of maximum and average differences compared to Hain et al. (2015)
   KspC: 1.87% max, 0.04% avg
   KS: 1.83% max, 0.10% avg
 ```
+Note that maximum deviations are seen when the change in Mg and Ca correlates, meaning that these deviations shouldn't be too important for palaeo-seawater calculations because the concentration of Mg and Ca tend to be anti-correlated through geological history.
 
 These differences arise from typo corrections in the original code, and pymyami should be closer to the original MIAMI model of Millerot and Pierrot (1998).
 
