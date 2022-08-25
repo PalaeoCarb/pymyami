@@ -54,7 +54,7 @@ def calc_seawater_ions(Sal=35., Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=N
 
 # dictionaries of ions containing their matrix indices
 # positive ions H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
-CA_IND = {
+CATION_IND = {
     'H': 0,
     'Na': 1,
     'K': 2,
@@ -63,8 +63,10 @@ CA_IND = {
     'Sr': 5
 }
 
+CATION_CHG = np.array([1, 1, 1, 2, 2, 2])
+
 # negative ions  OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
-AN_IND = {
+ANION_IND = {
     'OH': 0,
     'Cl': 1,
     'B(OH)4': 2,
@@ -74,13 +76,15 @@ AN_IND = {
     'SO4': 6
 }
 
+ANION_CHG = np.array([-1, -1, -1, -1, -1, -2, -2])
+
 # count ions
-N_CA = len(CA_IND)  # H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
-N_AN = len(AN_IND)  # OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
+N_CATION = len(CATION_IND)  # H+=0; Na+=1; K+=2; Mg2+=3; Ca2+=4; Sr2+=5
+N_ANION = len(ANION_IND)  # OH-=0; Cl-=1; B(OH)4-=2; HCO3-=3; HSO4-=4; CO3-=5; SO4-=6;
 
 # build a regex for pulling ions out of salt names
-recations = '|'.join(CA_IND.keys())
-reanions = '|'.join(AN_IND.keys())
+recations = '|'.join(CATION_IND.keys())
+reanions = '|'.join(ANION_IND.keys())
 reanions = reanions.replace('(', '\(').replace(')', '\)')  # escape brackets
 sm = re.compile('^(' + recations + ')[0-9]?\(?(' + reanions + ')\)?[0-9]?$')
 
@@ -99,8 +103,8 @@ def break_salt(s):
         return None, None
 
 # dictionary containing all valid ions
-Iind = CA_IND.copy()
-Iind.update(AN_IND)
+ION_IND = CATION_IND.copy()
+ION_IND.update(ANION_IND)
 
 # helper functions for converting tables into calculationg matrices
 
@@ -112,7 +116,7 @@ def filter_terms(tab, valid_ions):
     return tab.loc[include]
 
 def get_ion_index(ions):
-    return tuple([Iind[k] for k in ions.split('-')])
+    return tuple([ION_IND[k] for k in ions.split('-')])
 
 # Load Parameter Tables for calculating pitzer parameters
 TABLES = {}
@@ -123,8 +127,8 @@ for f in fs:
     TABLES[fname].fillna(0, inplace=True)
 
 # remove unused pairs
-TABA11 = filter_terms(TABLES['TabA11'], Iind)
-TABA10 = filter_terms(TABLES['TabA10'], Iind)
+TABA11 = filter_terms(TABLES['TabA11'], ION_IND)
+TABA10 = filter_terms(TABLES['TabA10'], ION_IND)
 
 
 # Table A1-9 equations for beta and C calculation
@@ -283,17 +287,17 @@ def calc_beta_C(TK):
     Tsub = TK - 298.15
 
     # create blank parameter tables
-    params = {k: np.zeros((N_CA, N_AN, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
+    params = {k: np.zeros((N_CATION, N_ANION, *TK.shape)) for k in ['beta_0', 'beta_1', 'beta_2', 'C_phi']}
 
     # All except Table A8 - Temperature Sensitive
     for table in EQ_TABLES:
         # iterate through each parameter type and salt in each table.
         for (param, salt), g in TABLES[table].groupby(['Parameter', 'Salt']):
             p, n = break_salt(salt)  # identify which ions are involved
-            if (p in CA_IND) and (n in AN_IND):
+            if (p in CATION_IND) and (n in ANION_IND):
                 # get the matrix indices of those ions
-                pi = CA_IND[p]
-                ni = AN_IND[n]
+                pi = CATION_IND[p]
+                ni = ANION_IND[n]
                 
                 eqn = EQ_TABLES[table]  # identify the correct equation
                 if table in EQ_SPECIAL:  # does the table have special cases?
@@ -306,9 +310,9 @@ def calc_beta_C(TK):
     # Table A8 - Constants
     for i, row in TABLES['TabA8'].iterrows():
         p, n = break_salt(row.Salt)
-        if (p in CA_IND) and (n in AN_IND):
-            pi = CA_IND[p]
-            ni = AN_IND[n]
+        if (p in CATION_IND) and (n in ANION_IND):
+            pi = CATION_IND[p]
+            ni = ANION_IND[n]
             for param in params:
                 params[param][pi, ni] = row[param]
     
@@ -331,17 +335,17 @@ def calc_Theta_Phi(TK):
     """
 
     # create empty arrays
-    Theta_positive = np.zeros((N_CA, N_CA, *TK.shape))
-    Theta_negative = np.zeros((N_AN, N_AN, *TK.shape))
-    Phi_PPN = np.zeros((N_CA, N_CA, N_AN, *TK.shape))
-    Phi_NNP = np.zeros((N_AN, N_AN, N_CA, *TK.shape))
+    Theta_positive = np.zeros((N_CATION, N_CATION, *TK.shape))
+    Theta_negative = np.zeros((N_ANION, N_ANION, *TK.shape))
+    Phi_PPN = np.zeros((N_CATION, N_CATION, N_ANION, *TK.shape))
+    Phi_NNP = np.zeros((N_ANION, N_ANION, N_CATION, *TK.shape))
 
     # Assign static values from Table A11
     for _, row in TABA11.iterrows():
         ions = row.Pair.split('-')
         index = get_ion_index(row.Pair)
 
-        if ions[0] in CA_IND:
+        if ions[0] in CATION_IND:
             if len(ions) == 2:
                 Theta_positive[index] = row.Value
                 Theta_positive[index[::-1]] = row.Value
@@ -349,7 +353,7 @@ def calc_Theta_Phi(TK):
                 Phi_PPN[index] = row.Value
                 Phi_PPN[index[1], index[0], index[2]] = row.Value
         
-        if ions[0] in AN_IND:
+        if ions[0] in ANION_IND:
             if len(ions) == 2:
                 Theta_negative[index] = row.Value
                 Theta_negative[index[::-1]] = row.Value
@@ -367,14 +371,14 @@ def calc_Theta_Phi(TK):
         val = EqA10(a, TK)  # calculate value
         
         # assign value
-        if ions[0] in CA_IND:
+        if ions[0] in CATION_IND:
             if len(ions) == 2:
                 Theta_positive[index] = val
                 Theta_positive[index[::-1]] = val
             elif len(ions) == 3:
                 Phi_PPN[index] = val
                 Phi_PPN[index[1], index[0], index[2]] = val
-        if ions[0] in AN_IND:
+        if ions[0] in ANION_IND:
             if len(ions) == 2:
                 Theta_negative[index] = val
                 Theta_negative[index[::-1]] = val
@@ -393,14 +397,14 @@ def calc_Theta_Phi(TK):
     for ionstr, v in special.items():
         ions = ionstr.split('-')
         index = get_ion_index(ionstr)
-        if ions[0] in CA_IND:
+        if ions[0] in CATION_IND:
             if len(ions) == 2:
                 Theta_positive[index] = v
                 Theta_positive[index[::-1]] = v
             elif len(ions) == 3:
                 Phi_PPN[index] = v
                 Phi_PPN[index[1], index[0], index[2]] = v
-        if ions[0] in AN_IND:
+        if ions[0] in ANION_IND:
             if len(ions) == 2:
                 Theta_negative[index] = v
                 Theta_negative[index[::-1]] = v
