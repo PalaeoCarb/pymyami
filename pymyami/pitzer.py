@@ -262,13 +262,8 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # old calculations
     # BMX_phi = beta_0 + beta_1 * np.exp(-2 * sqrtI)  # Eq. A11
     # BMX = beta_0 + (beta_1 / (2 * Istr)) * (1 - (1 + 2 * sqrtI) * np.exp(-2 * sqrtI))  # Eq. A12
-
-    ################################################################################
     # NOTE: Typo in original -                                                 v    should be Istr!!
     # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * sqrtI)) * np.exp(-2 * sqrtI))  # Eq. A13
-    ################################################################################
-
-    # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * Istr)) * np.exp(-2 * sqrtI))  # Eq. A13
     # CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
 
     # H-SO4  -  TODO: unclear how this comes from Clegg et al, 1994...
@@ -290,7 +285,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
         (.5 * sqrtI * 2.5 * sqrtI * 2.5 * sqrtI * 2.5 * sqrtI)
         )  # w = 2.5 ... see Clegg et al., 1994
 
-    # unusual alpha=1.7 for Na2SO4
+    # unusual alpha=1.7 for Na2SO4  # TODO: where does this come from?
     # BMX[1, 6] = beta_0[1, 6] + (beta_1[1, 6] / (2.89 * Istr)) * 2 * (1 - (1 + 1.7 * sqrtI) * np.exp(-1.7 * sqrtI))
     # BMX[1, 6] = beta_0[1, 6] + (beta_1[1, 6] / (1.7 * Istr)) * (1 - (1 + 1.7 * sqrtI) * np.exp(-1.7 * sqrtI))
 
@@ -300,7 +295,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # Calculate gamma_anion and gamma_cation from BMX and CMX    
     ################################################################################
     
-    # anion * cation * BMX or CMX matrices
+    # anion * cation * BMX or CMX matrices  TODO: how do these relate to Eq A18-  ?
     mR = (m_anion * np.expand_dims(m_cation, 1) * BMX_apostroph).sum((0,1))
     mS = (m_anion * np.expand_dims(m_cation, 1) * CMX).sum((0,1))
 
