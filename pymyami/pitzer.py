@@ -266,8 +266,8 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # H-SO4
     # TODO: unclear how this comes from Clegg et al, 1994...
-    # This does nothing because beta params for for H-SO4 are all zeros.
-    # Check that this is the case in original MyAMI.
+    # This does nothing because beta params for for H-SO4 are all zeros -
+    # they're commented out in TabA9 because they were not used in MyAMI.
     # cat, an = get_ion_index('H-SO4')
     # # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al.,
     # # 1994 --- Millero and Pierrot are completly off for this ion pair
