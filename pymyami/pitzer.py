@@ -1,6 +1,6 @@
 import numpy as np
 from .helpers import expand_dims, match_dims, standard_seawater, calc_Istr, calc_KF, calc_KS
-from .params import TABLES, calc_lambda_zeta, Iind, calc_seawater_ions, get_ion_index
+from .params import TABLES, calc_lambda_zeta, calc_seawater_ions, get_ion_index, CATION_CHG, ANION_CHG, ION_IND, N_CATION, N_ANION
 
 # TODO: new file for user-facing functions.
 
@@ -74,6 +74,7 @@ def calc_A_phi(TK):
     TK : array-like
         Temperature in Kelvin
     """
+    # TODO: put these in an external file?
     return (
         3.36901532e-01
         - 6.32100430e-04 * TK
@@ -187,19 +188,16 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # make tables of ion charges used in later calculations
 
     # cation order: [H, Na, K, Mg, Ca, Sr]
-    cation_charges = np.array([1, 1, 1, 2, 2, 2])
     Z_cation = np.full(
-        (cation_charges.size, *TK.shape),
-        expand_dims(cation_charges, TK)
+        (CATION_CHG.size, *TK.shape),
+        expand_dims(CATION_CHG, TK)
         )
 
     # anion order: [OH, Cl, B(OH)4, HCO3, HSO4, CO3, SO4]
-    anion_charges = np.array([-1, -1, -1, -1, -1, -2, -2])
     Z_anion = np.full(
-        (anion_charges.size, *TK.shape),
-        expand_dims(anion_charges, TK)
-        )   
-
+        (ANION_CHG.size, *TK.shape),
+        expand_dims(ANION_CHG, TK)
+        )
     
     A_phi = calc_A_phi(TK=TK)  # Eq A10
 
@@ -282,7 +280,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     BMX[cat, an] = beta_0[cat, an] + beta_1[cat, an] * gClegg
     BMX_apostroph[cat, an] = beta_1[cat, an] / Istr * (np.exp(-xClegg) - gClegg)
 
-    C1_HSO4 = 0  # not sure what this is, but was in original MyAMI...
+    C1_HSO4 = 0  # TODO: not sure what this is, but was in original MyAMI...
     CMX[cat, an] = (
         C_phi[cat, an] + 4 * C1_HSO4 * 
         (6 - (6 + 2.5 * sqrtI * (6 + 3 * 2.5 * sqrtI + 2.5 * sqrtI * 2.5 * sqrtI)) *
@@ -308,22 +306,22 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # Original ln_gamma_anion calculation loop:
     ln_gamma_anion = Z_anion * Z_anion * (f_gamma + mR) + Z_anion * mS
-    for an in range(0, 7):
-        for cat in range(0, 6):
+    for an in range(0, N_ANION):
+        for cat in range(0, N_CATION):
             ln_gamma_anion[an] += 2 * m_cation[cat] * (
                 BMX[cat, an] + E_cat * CMX[cat, an]
             )
-        for an2 in range(0, 7):
+        for an2 in range(0, N_ANION):
             ln_gamma_anion[an] += m_anion[an2] * (
                 2 * Theta_negative[an, an2]
             )
-        for an2 in range(0, 7):
-            for cat in range(0, 6):
+        for an2 in range(0, N_ANION):
+            for cat in range(0, N_CATION):
                 ln_gamma_anion[an] += (
                     m_anion[an2] * m_cation[cat] * Phi_NNP[an, an2, cat]
                 )
-        for cat in range(0, 6):
-            for cat2 in range(cat + 1, 6):
+        for cat in range(0, N_CATION):
+            for cat2 in range(cat + 1, N_CATION):
                 ln_gamma_anion[an] += (
                     m_cation[cat] * m_cation[cat2] * Phi_PPN[cat, cat2, an]
                 )
@@ -345,20 +343,20 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # Original ln_gamma_cation calculation loop:
     ln_gamma_cation = Z_cation * Z_cation * (f_gamma + mR) + Z_cation * mS
-    for cat in range(0, 6):
-        for an in range(0, 7):
+    for cat in range(0, N_CATION):
+        for an in range(0, N_ANION):
             ln_gamma_cation[cat] += 2 * m_anion[an] * (
                 BMX[cat, an] + E_cat * CMX[cat, an]
             )
-        for cat2 in range(0, 6):
+        for cat2 in range(0, N_CATION):
             ln_gamma_cation[cat] += m_cation[cat2] * (2 * Theta_positive[cat, cat2])
-        for cat2 in range(0, 6):
-            for an in range(0, 7):
+        for cat2 in range(0, N_CATION):
+            for an in range(0, N_ANION):
                 ln_gamma_cation[cat] += (
                     m_cation[cat2] * m_anion[an] * Phi_PPN[cat, cat2, an]
                 )
-        for an in range(0, 7):
-            for an2 in range(an + 1, 7):
+        for an in range(0, N_ANION):
+            for an2 in range(an + 1, N_ANION):
                 ln_gamma_cation[cat] += (
                     + m_anion[an] * m_anion[an2] * Phi_NNP[an, an2, cat]
                 )
@@ -380,7 +378,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # thus, conversion is required
     K_HSO4_conditional = calc_KS(TK=TK, Sal=Sal, Istr=Istr)
     K_HF_conditional = calc_KF(TK=TK, Sal=Sal)
-    TF = 0.0000683
+    TF = 0.0000683  # TODO: estimate from Sal?
     TS = m_anion[6]
     
     alpha_Hsws = 1 / (1 + TS / K_HSO4_conditional + TF / K_HF_conditional)
@@ -439,8 +437,8 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
     cations = ['H', 'Na', 'K', 'Mg', 'Ca']
     anions = ['Cl', 'SO4']
     
-    m_cation = np.array([m_cat[Iind[c]] for c in cations])
-    m_anion = np.array([m_an[Iind[a]] for a in anions])
+    m_cation = np.array([m_cat[ION_IND[c]] for c in cations])
+    m_anion = np.array([m_an[ION_IND[a]] for a in anions])
     m_ion = np.concatenate([m_cation, m_anion])
     
     m_zeta = (np.expand_dims(m_anion,1) * np.expand_dims(m_cation,0))  # matrix for zeta calculation
@@ -456,15 +454,15 @@ def calc_gammaCO2_gammaB(TK, m_an, m_cat):
     # CALCULATION OF gammaCO2
 
     ln_gammaCO2 = (m_ion * 2 * lambdaCO2).sum(0)  # lambdaCO2
-    # ln_gammaCO2 += (m_zeta * zetaCO2).sum((0,1))  # zetaCO2 (not used in original MyAMI, introduces small differences...)
+    # ln_gammaCO2 += (m_zeta * zetaCO2).sum((0,1))  # TODO: zetaCO2 not used in original MyAMI... why? Introduces small differences...
     gammaCO2 = np.exp(ln_gammaCO2)  # as according to He and Morse 1993
 
-
+    # TODO: unclear where this comes from
     gammaCO2gas = np.exp(
         1 / (8.314462175 * TK *
             (0.10476 - 61.0102 / TK - 660000 / TK / TK / TK - 2.47e27 / np.power(TK, 12))
         )
-    )  # unclear where this comes from.
+    )
 
     ##########################
     # CALCULATION OF gammaB
