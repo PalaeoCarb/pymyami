@@ -271,8 +271,10 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # H-SO4  -  TODO: unclear how this comes from Clegg et al, 1994...
     cat, an = get_ion_index('H-SO4')
-    # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al.,
-    # 1994 --- Millero and Pierrot are completly off for this ion pair
+    # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al. 1994
+    # Millero and Pierrot are completly off for this ion pair
+    # alpha_HSO4_Clegg = 2 - 1842.843 * (1 / TK - 1 / 298.15)
+    
     xClegg = (2 - 1842.843 * (1 / TK - 1 / 298.15)) * sqrtI
     # xClegg = (2) * sqrtI
     gClegg = 2 * (1 - (1 + xClegg) * np.exp(-xClegg)) / (xClegg * xClegg)
