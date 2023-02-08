@@ -47,7 +47,7 @@ def calc_gKs(TC, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=
     gammaT_HCO3 = gammas['anion'][3]
     gammaT_CO3 = gammas['anion'][5] * alphas['CO3']
     
-    gammaT_Ht = gammas['cation'][0] * alphas['Ht']
+    gammaT_Ht = gammas['cation'][0] * alphas['Ht']  # remove the alpha to put everything on free scale?
     gammaT_Ca = gammas['cation'][4]
 
     gammaCO2_gammaB = calc_gammaCO2_gammaB(TK, m_anion, m_cation)
@@ -264,26 +264,27 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * sqrtI)) * np.exp(-2 * sqrtI))  # Eq. A13
     # CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
 
-    # H-SO4  -  TODO: unclear how this comes from Clegg et al, 1994...
-    cat, an = get_ion_index('H-SO4')
-    # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al. 1994
-    # Millero and Pierrot are completly off for this ion pair
-    # alpha_HSO4_Clegg = 2 - 1842.843 * (1 / TK - 1 / 298.15)
-    
-    xClegg = (2 - 1842.843 * (1 / TK - 1 / 298.15)) * sqrtI
-    # xClegg = (2) * sqrtI
-    gClegg = 2 * (1 - (1 + xClegg) * np.exp(-xClegg)) / (xClegg * xClegg)
-    # alpha = (2 - 1842.843 * (1 / T - 1 / 298.15)) see Table 6 in Clegg et al 1994
-    BMX[cat, an] = beta_0[cat, an] + beta_1[cat, an] * gClegg
-    BMX_apostroph[cat, an] = beta_1[cat, an] / Istr * (np.exp(-xClegg) - gClegg)
+    # H-SO4
+    # TODO: unclear how this comes from Clegg et al, 1994...
+    # This does nothing because beta params for for H-SO4 are all zeros -
+    # they're commented out in TabA9 because they were not used in MyAMI.
+    # cat, an = get_ion_index('H-SO4')
+    # # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al.,
+    # # 1994 --- Millero and Pierrot are completly off for this ion pair
+    # xClegg = (2 - 1842.843 * (1 / TK - 1 / 298.15)) * sqrtI
+    # # xClegg = (2) * sqrtI
+    # gClegg = 2 * (1 - (1 + xClegg) * np.exp(-xClegg)) / (xClegg * xClegg)
+    # # alpha = (2 - 1842.843 * (1 / T - 1 / 298.15)) see Table 6 in Clegg et al 1994
+    # BMX[cat, an] = beta_0[cat, an] + beta_1[cat, an] * gClegg
+    # BMX_apostroph[cat, an] = beta_1[cat, an] / Istr * (np.exp(-xClegg) - gClegg)
 
-    C1_HSO4 = 0  # TODO: not sure what this is, but was in original MyAMI...
-    CMX[cat, an] = (
-        C_phi[cat, an] + 4 * C1_HSO4 * 
-        (6 - (6 + 2.5 * sqrtI * (6 + 3 * 2.5 * sqrtI + 2.5 * sqrtI * 2.5 * sqrtI)) *
-        np.exp(-2.5 * sqrtI)) / 
-        (.5 * sqrtI * 2.5 * sqrtI * 2.5 * sqrtI * 2.5 * sqrtI)
-        )  # w = 2.5 ... see Clegg et al., 1994
+    # C1_HSO4 = 0  # TODO: If this is zero, CMX is not modified.
+    # CMX[cat, an] = (
+    #     C_phi[cat, an] + 4 * C1_HSO4 * 
+    #     (6 - (6 + 2.5 * sqrtI * (6 + 3 * 2.5 * sqrtI + 2.5 * sqrtI * 2.5 * sqrtI)) *
+    #     np.exp(-2.5 * sqrtI)) / 
+    #     (.5 * sqrtI * 2.5 * sqrtI * 2.5 * sqrtI * 2.5 * sqrtI)
+    #     )  # w = 2.5 ... see Clegg et al., 1994
 
     # unusual alpha=1.7 for Na2SO4  # TODO: where does this come from?
     # BMX[1, 6] = beta_0[1, 6] + (beta_1[1, 6] / (2.89 * Istr)) * 2 * (1 - (1 + 1.7 * sqrtI) * np.exp(-1.7 * sqrtI))
@@ -395,7 +396,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
         m_cation[3] * m_anion[1] * b0b1CPhi_MgOH[3]  # interaction between MgOH-Mg-OH affects MgOH gamma
         )
     gamma_MgOH = np.exp(ln_gamma_MgOH)
-
+    
     # TODO: where do all these parameters come from - Table II? Calculating empirical Ks?
     K_MgOH = np.power(10, -(3.87 - 501.6 / TK)) / (gamma_cation[3] * gamma_anion[0] / gamma_MgOH)
     K_MgCO3 = np.power(10, -(1.028 + 0.0066154 * TK)) / (gamma_cation[3] * gamma_anion[5] / gamma_MgCO3)
