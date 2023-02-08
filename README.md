@@ -44,7 +44,7 @@ pip install pymyami
 
 ## Example Usage
 ```python
-from pymyami impor  t calc_Fcorr, approximate_Fcorr
+from pymyami import calc_Fcorr, approximate_Fcorr
 
 # run the model to calculate correction factors
 calc_Fcorr(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
