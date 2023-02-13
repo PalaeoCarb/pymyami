@@ -15,7 +15,7 @@ class MyAMI_V1_crosscheck(unittest.TestCase):
         check = pd.read_csv(checkfile, index_col=0)
         check.columns = ['T', 'S', 'Ca', 'Mg', 'KspC', 'K1', 'K2', 'KW', 'KB', 'KspA', 'K0', 'KS']
 
-        new_Fcorr = pymyami.calc_Fcorr(Sal=check.S.values, TempC=check['T'].values, Ca=check.Ca.values, Mg=check.Mg.values)
+        new_Fcorr = pymyami.calculate_seawater_correction(Sal=check.S.values, TempC=check['T'].values, Ca=check.Ca.values, Mg=check.Mg.values)
 
         Ks = 'K0', 'K1', 'K2', 'KW', 'KB', 'KspA', 'KspC', 'KS'
 

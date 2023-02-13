@@ -44,10 +44,10 @@ pip install pymyami
 
 ## Example Usage
 ```python
-from pymyami impor  t calc_Fcorr, approximate_Fcorr
+from pymyami import calculate_seawater_correction, approximate_seawater_correction
 
 # run the model to calculate correction factors
-calc_Fcorr(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
+calculate_seawater_correction(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
 
 >>> {'KspC': 0.7843309390178521,
      'KspA': 0.7843309390178521,
@@ -59,7 +59,7 @@ calc_Fcorr(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
      'KS': 0.9573891319238595}
 
 # use the polynomial approximation to calculate correction factors
-approximate_Fcorr(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
+approximate_seawater_correction(TempC=35, Sal=36.2, Mg=0.03, Ca=0.012)
 
 >>> UserWarning: WARNING: using approximate MyAMI K correction factors instead of calculated ones. These are only accurate to within ~0.25%. Please dont use them for anything critical.
 

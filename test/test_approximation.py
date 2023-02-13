@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from pymyami import approximate_Fcorr, calc_Fcorr
+from pymyami import approximate_seawater_correction, calculate_seawater_correction
 
 import matplotlib.pyplot as plt
 
@@ -10,7 +10,7 @@ N = 10000
 
 class TestApproximation(unittest.TestCase):
     
-    def test_approximate_Fcorr(self):
+    def test_approximate_seawater_correction(self):
         # set random state
         np.random.seed(42)
 
@@ -22,8 +22,8 @@ class TestApproximation(unittest.TestCase):
 
         print(f'\n\nChecking approximation function (max relative difference <{TOLERANCE}%)...\n')
         # calculate Fcorr using each method
-        direct = calc_Fcorr(TempC=TempC, Sal=Sal, Mg=Mg, Ca=Ca)
-        approx = approximate_Fcorr(TempC=TempC, Sal=Sal, Mg=Mg, Ca=Ca)
+        direct = calculate_seawater_correction(TempC=TempC, Sal=Sal, Mg=Mg, Ca=Ca)
+        approx = approximate_seawater_correction(TempC=TempC, Sal=Sal, Mg=Mg, Ca=Ca)
 
         # test Ks
         for k in direct:
