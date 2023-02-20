@@ -7,7 +7,7 @@ from .pitzer import calc_gKs
 from .params import PitzerParams
 
 
-def calc_Fcorr(Sal=35., TempC=25., Na=None, K=None, Mg=None, Ca=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None):
+def calculate_seawater_correction(Sal=35., TempC=25., Na=None, K=None, Mg=None, Ca=None, Sr=None, Cl=None, BOH4=None, HCO3=None, CO3=None, SO4=None):
     """
     Calculate K correction factors as a fn of temp and salinity that can be applied to empirical Ks
 

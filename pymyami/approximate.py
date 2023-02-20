@@ -11,13 +11,13 @@ from datetime import datetime
 from warnings import warn
 
 from .helpers import shape_matcher, load_params, MyAMI_parameter_file
-from .calculate import calc_Fcorr
+from .calculate import calculate_seawater_correction
 
-FCORR_COEFS = load_params('Fcorr_approx.json')
+SEAWATER_CORRECTION_COEFS = load_params('seawater_correction_approximated.json')
 
-def approximate_Fcorr(TempC=25, Sal=35, Mg=0.0528171, Ca=0.0102821):
+def approximate_seawater_correction(TempC=25, Sal=35, Mg=0.0528171, Ca=0.0102821):
     """
-    Approximate Fcorr using pre-calculated polynomial.
+    Approximate seawater correction using pre-calculated polynomial.
     
     Faster, but introduces up to ~0.2% error on correction factors in extreme
 
@@ -33,7 +33,7 @@ def approximate_Fcorr(TempC=25, Sal=35, Mg=0.0528171, Ca=0.0102821):
     Returns
     -------
     dict
-        Containing Fcorr factors for the specified inputs
+        Containing seawater correction factors for the specified inputs
     """
 
     warning_message = (
@@ -58,8 +58,8 @@ def approximate_Fcorr(TempC=25, Sal=35, Mg=0.0528171, Ca=0.0102821):
     poly = PolynomialFeatures(degree=3)
     X_ = poly.fit_transform(X)
     
-    # calculate and return Fcorr
-    return {k: X_.dot(c).reshape(in_shape) for k, c in FCORR_COEFS.items()}
+    # calculate and return seawater correction
+    return {k: X_.dot(c).reshape(in_shape) for k, c in SEAWATER_CORRECTION_COEFS.items()}
 
 
 def check_limits(TempC, Sal, Mg, Ca):
@@ -82,15 +82,15 @@ def check_limits(TempC, Sal, Mg, Ca):
         raise ValueError('[Ca] outside valid limits (0-0.06)' + warntext)
 
 
-def generate_approximate_Fcorr_params(n=29, fit_reports=True):
+def generate_approximate_seawater_correction_params(n=29, fit_reports=True):
     """
-    Generate a Look Up Table (LUT) of parameters used to approximate Fcorr.
+    Generate a Look Up Table (LUT) of parameters used to approximate seawater correction.
 
-    The Fcorr factor is used to correct an empirical K value at
+    The seawater correction factor is used to correct an empirical K value at
     a given TempC and Sal for Mg and Ca concentration, and should be
     applied as:
 
-    Kcorr = Kempirical * Fcorr
+    Kcorr = Kempirical * seawater_correction
 
     Parameter ranges are:
         TempC: 0 - 40 Celcius
@@ -115,9 +115,9 @@ def generate_approximate_Fcorr_params(n=29, fit_reports=True):
     # grid inputs
     gTempC, gSal, gMg, gCa = np.meshgrid(TempC, Sal, Mg, Ca)
     
-    # calculate Fcorr
-    Fcorr = calc_Fcorr(Sal=gSal, TempC=gTempC, Mg=gMg, Ca=gCa)
-    flat_Fcorr = {k: v.ravel() for k, v in Fcorr.items()}
+    # calculate seawater correction
+    seawater_correction = calculate_seawater_correction(Sal=gSal, TempC=gTempC, Mg=gMg, Ca=gCa)
+    flat_seawater_correction = {k: v.ravel() for k, v in seawater_correction.items()}
     
     # generate design matrix for fitting
     X = np.vstack([
@@ -133,23 +133,23 @@ def generate_approximate_Fcorr_params(n=29, fit_reports=True):
     
     # calculate best-fit parameters
     coefs = {}
-    for k in flat_Fcorr:
-        y = flat_Fcorr[k]
+    for k in flat_seawater_correction:
+        y = flat_seawater_correction[k]
         coefs[k], _, _, _ = lstsq(X_, y)
         
     if fit_reports:
         print(f'Fit reports saved in {MyAMI_parameter_file()}')
         pred = {k: X_.dot(c) for k, c in coefs.items()}
         for k in coefs:
-            fname = MyAMI_parameter_file(f'Fcorr_approx_{k}.png')
-            fig, axs = Fcorr_fit_report(k, flat_Fcorr[k], pred[k], X)
+            fname = MyAMI_parameter_file(f'seawater_correction_approximated_{k}.png')
+            fig, axs = seawater_correction_fit_report(k, flat_seawater_correction[k], pred[k], X)
             fig.savefig(fname, dpi=150)
 
-    with open(MyAMI_parameter_file('Fcorr_approx.json'), 'w') as f:
+    with open(MyAMI_parameter_file('seawater_correction_approximated.json'), 'w') as f:
         json.dump({k: list(v) for k, v in coefs.items()}, f)
 
 
-def Fcorr_fit_report(k, obs, pred, X):
+def seawater_correction_fit_report(k, obs, pred, X):
     
     now = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
 
@@ -164,7 +164,7 @@ def Fcorr_fit_report(k, obs, pred, X):
 
     ax = fig.add_subplot(gs[0,:])
     ax.scatter(obs, epc, **kwargs)
-    ax.set_xlabel('F_corr')
+    ax.set_xlabel('Seawater correction')
     ax.set_ylabel('% Error')
     ax.set_title(k, weight='bold', loc='left')
     ax.text(0.98, 0.95, f'Generated: {now}', transform=ax.transAxes, ha='right', va='top')
