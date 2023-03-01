@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from pymyami import approximate_Fcorr, calc_Fcorr
+from pymyami import approximate_seawater_correction, calculate_seawater_correction
 
 class TestInputs(unittest.TestCase):
     
@@ -11,5 +11,5 @@ class TestInputs(unittest.TestCase):
         # generate test conditions
         TempC = np.random.uniform(low=30, high=40, size=(3,4))
 
-        direct = calc_Fcorr(TempC=TempC)
+        direct = calculate_seawater_correction(TempC=TempC)
     
