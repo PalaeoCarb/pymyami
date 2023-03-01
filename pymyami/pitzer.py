@@ -243,6 +243,11 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
         beta_2 * 2 / (alpha_2**2 * Istr) * (1 - (1 + alpha_2 * sqrtI) * np.exp(-alpha_2 * sqrtI))
         )  # Eq. A12 and A16
     
+    # Note: the equations in the paper just show constants calculated from fixed values of alpha_1
+    # and alpha_2.
+    # The calculations here are equivalent to the paper, but write out the full pitzer equations for
+    # using alpha_1 and alpha_2. 
+    
     BMX_apostroph = (
         beta_1 * 2 / (alpha_1**2 * Istr**2) * (-1 + (1 + alpha_1 * sqrtI + alpha_1**2 * Istr / 2) * np.exp(-alpha_1 * sqrtI)) + 
         beta_2 * 2 / (alpha_2**2 * Istr   ) * (-1 - (1 + alpha_2 * sqrtI + alpha_2**2 * Istr / 2) * np.exp(-alpha_2 * sqrtI))
@@ -264,10 +269,10 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # BMX_apostroph = (beta_1 / (2 * Istr**2)) * (-1 + (1 + (2 * sqrtI) + (2 * sqrtI)) * np.exp(-2 * sqrtI))  # Eq. A13
     # CMX = C_phi / (2 * np.sqrt(-np.expand_dims(Z_anion, 0) * np.expand_dims(Z_cation, 1)))  # Eq. A14
 
-    # H-SO4
-    # TODO: unclear how this comes from Clegg et al, 1994...
-    # This does nothing because beta params for for H-SO4 are all zeros -
-    # they're commented out in TabA9 because they were not used in MyAMI.
+    # # H-SO4
+    # # TODO: unclear how this comes from Clegg et al, 1994...
+    # # This does nothing because beta params for for H-SO4 are all zeros -
+    # # they're commented out in TabA9 because they were not used in MyAMI.
     # cat, an = get_ion_index('H-SO4')
     # # BMX* is calculated with T-dependent alpha for H-SO4; see Clegg et al.,
     # # 1994 --- Millero and Pierrot are completly off for this ion pair
