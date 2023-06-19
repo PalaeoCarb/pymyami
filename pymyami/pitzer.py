@@ -15,13 +15,15 @@ def calc_gKs(TC, Sal, Na=None, K=None, Ca=None, Mg=None, Sr=None, Cl=None, BOH4=
         Temperature in Celcius
     Sal : array-like
         Salinity
-    Na, K, Ca, Mg, Sr, Cl, BOH4, HCO3, CO3, SO4 : array-like, optional
+    Na, K, Ca, Mg, Sr, Cl, BOH4, HCO3, CO3, SO4 : array-like
         Average concentration of ions in seawater in mol kg-1, by default None
-    beta_0, beta_1, beta_2, C_phi : numpy.NDarray, optional
+        If none, values are calculated from salinity using seawater composition of
+        Millero et al., 2008.
+    beta_0, beta_1, beta_2, C_phi : numpy.NDarray
         Matrices of ion interaction coefficients from tables A1-A9 of
         Millero and Pierrot (1998; doi:10.1023/A:1009656023546) provided
         by the params.PitzerParams function.
-    Theta_negative, Theta_positive, Phi_NNP, Phi_PPN : numpy.NDarray, optional
+    Theta_negative, Theta_positive, Phi_NNP, Phi_PPN : numpy.NDarray
         Matrices of ion interaction coefficients from tables A10 and A11 of
         Millero and Pierrot (1998; doi:10.1023/A:1009656023546) provided
         by the params.PitzerParams function.
