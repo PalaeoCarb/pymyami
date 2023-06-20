@@ -207,7 +207,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # E_cat = sum(m_cation * Z_cation)
     E_an = -sum(m_anion * Z_anion)
-    E_cat = -E_an
+    E_cat = -E_an  # this enforces charge balance.
 
     # Calculate second and third virial coefficients
     
@@ -383,7 +383,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     # thus, conversion is required
     K_HSO4_conditional = calc_KS(TK=TK, Sal=Sal, Istr=Istr)
     K_HF_conditional = calc_KF(TK=TK, Sal=Sal)
-    TF = 0.0000683  # TODO: estimate from Sal?
+    TF = 0.0000683 * Sal / 35
     TS = m_anion[6]
     
     alpha_Hsws = 1 / (1 + TS / K_HSO4_conditional + TF / K_HF_conditional)
@@ -391,7 +391,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
 
     # TODO: Unclear where this next section about gamma_MgCO3 has come from - talk to Mathis!
     # A number of ion pairs are calculated explicitly: MgOH, CaCO3, MgCO3, SrCO3
-    # since OH and CO3 are rare compared to the anions the anion alpha (free /
+    # since OH and CO3 are rare compared to the cations the anion alpha (free /
     # total) are assumed to be unity
     gamma_MgCO3 = gamma_CaCO3 = gamma_SrCO3 = 1
 
