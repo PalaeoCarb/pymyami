@@ -36,4 +36,5 @@ Sr(HCO3)2,0.2,0.3,,0,Ca2+ salt
 Sr(HSO3)2,0.2145,2.53,,0,Ca2+ salt
 Sr(OH)2,-0.1747,-0.2303,,-5.72,Ca2+ salt
 SO4(NH4)2,0.04088,0.6585,,-0.00116,Pitzer and Mayorga (1973)
-MgOHCl,-0.1,1.658,,0,Harvie et al. (1984)
+# MgOHCl,-0.1,1.658,,0,Harvie et al. (1984)
+MgOH,-0.1,1.658,,0,Harvie et al. (1984)
