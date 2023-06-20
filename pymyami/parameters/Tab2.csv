@@ -1,0 +1,16 @@
+# Table 2 of Millero and Pierrot (1998) doi:10.1023/A:1009656023546
+# Parameters for Equation (24) to calculate the association constants for the formation of ion pairs.
+# pK = A + B / T + C T 
+IonPair,A,B,C
+MgOH+,3.87,-501.6,0
+MgF+,3.504,-501.6,0
+CaF+,3.014,-501.6,0
+MgCO3,1.028,0,0.0066154
+CaCO3,1.178,0,0.0066154
+SrCO3,1.028,0,0.0066154
+MgH2PO4+,1.13,0,0
+CaH2PO4+,1,0,0
+MgHPO4,2.7,0,0
+CaHPO4,2.74,0,0
+MgPO4-,5.63,0,0
+CaPO4-,7.1,0,0
