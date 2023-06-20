@@ -395,6 +395,7 @@ def calc_gamma_alpha(TK, Sal, Istr, m_cation, m_anion,
     gamma_MgCO3 = gamma_CaCO3 = gamma_SrCO3 = 1
 
     ii = get_ion_index('Mg-OH')
+    # TODO: can't see a clean way to get around hard-coding this parameter, as it isn't imported in the Phi_NNP array... why?
     Phi_MgOH = 0.028  # from Table A11 MgOH-Mg-OH interaction parameter
     ln_gamma_MgOH = (
         1 * (f_gamma + mR) + 1 * mS +
