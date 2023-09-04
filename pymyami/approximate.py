@@ -39,7 +39,7 @@ def approximate_seawater_correction(TempC=25, Sal=35, Mg=0.0528171, Ca=0.0102821
     warning_message = (
         'WARNING: using approximate MyAMI K correction factors' +
         'instead of calculated ones. These are only accurate to' +
-        "within ~0.25%. Please don't use them for anything critical."
+        "within ~0.4%. Please don't use them for anything critical."
         )
     warn(warning_message, UserWarning)
     
