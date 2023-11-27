@@ -367,7 +367,7 @@ def calc_Theta_Phi(TK):
         ions = row.Pair.split('-')
         index = get_ion_index(row.Pair)
         
-        a = row[pnames]  # identify parameters
+        a = row[pnames].values  # identify parameters
         val = EqA10(a, TK)  # calculate value
         
         # assign value
